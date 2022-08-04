@@ -12,4 +12,12 @@ userRouter.route("/customers").get(Auth.isAdmin, UserController.getCustomers);
 
 userRouter.route("/approve").post(Auth.isAdmin, UserController.approveCustomer);
 
+userRouter.route("/payments").get(UserController.getPaymentDetails);
+
+userRouter.route("/renew").get(UserController.renewPackage);
+
+userRouter.route("/change").get(UserController.changePackage);
+
+userRouter.route("/delete").get(UserController.deleteCustomer);
+
 export default userRouter;

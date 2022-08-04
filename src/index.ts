@@ -10,7 +10,7 @@ import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.routes";
 import UserModel from "./models/user.model";
 import { User } from "./typings";
-import packageModel from "./models/package.model";
+import PackageModel from "./models/package.model";
 import paymentRouter from "./routes/payment.routes";
 import superRouter from "./routes/super.routes";
 
@@ -92,7 +92,23 @@ app.use(
 );
 
 app.get("/api/v1/test", async (req: Request, res: Response) => {
-  return res.json(await packageModel.find());
+  //"NANO", "MICRO", "MEGA", "GIGA", "OGA NA BOSS"
+  // await packageModel.create({
+  //   name: "NANO",
+  // });
+  // await packageModel.create({
+  //   name: "MICRO",
+  // });
+  // await packageModel.create({
+  //   name: "MEGA",
+  // });
+  // await packageModel.create({
+  //   name: "GIGA",
+  // });
+  // await packageModel.create({
+  //   name: "OGA NA BOSS",
+  // });
+  return res.json(await PackageModel.find());
 });
 app.use("*", (req, res: Response, next) => {
   return res.status(404).json({
@@ -101,16 +117,16 @@ app.use("*", (req, res: Response, next) => {
   });
 });
 
-// app.use((error: any, req: Request, res: Response, next: NextFunction) => {
-//   //console.log(error);
-//   const status = error.status || 500;
-//   const message = error.message;
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  //console.log(error);
+  const status = error.status || 500;
+  const message = error.message;
 
-//   res.status(status).json({
-//     message: message,
-//     status: status,
-//   });
-// });
+  res.status(status).json({
+    message: message,
+    status: status,
+  });
+});
 
 app.listen(PORT, async () => {
   await Config.connect();

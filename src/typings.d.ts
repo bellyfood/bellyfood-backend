@@ -15,9 +15,14 @@ export interface User {
   updatedAt: Date;
 }
 
-export class CustomersFilter {
+export class UsersFilter {
   approved?: boolean;
+  paid?: boolean;
+  delivered?: boolean;
   agentCode?: number;
+}
+
+export class CustomersFilter extends UsersFilter {
   role: string;
 }
 
@@ -42,7 +47,7 @@ export class CreateCustomer {
 }
 
 export class AddPayment {
-  customerId: string;
+  phone: string;
   amount: number;
 }
 

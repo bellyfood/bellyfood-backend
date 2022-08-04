@@ -5,10 +5,12 @@ const packageSchema = new Schema(
   {
     name: {
       type: String,
+      required: true,
       enum: ["NANO", "MICRO", "MEGA", "GIGA", "OGA NA BOSS"],
     },
     price: {
       type: Number,
+      required: true,
     },
   },
   {

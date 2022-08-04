@@ -9,7 +9,15 @@ superRouter
   .post(Auth.isSuperAdmin, UserController.createAdmin);
 
 superRouter
+  .route("/deliver")
+  .post(Auth.isSuperAdmin, UserController.deliverToUser);
+
+superRouter
   .route("/history")
   .get(Auth.isSuperAdmin, UserController.getHistoryByDay);
+
+superRouter
+  .route("/report")
+  .get(Auth.isSuperAdmin, UserController.generateMonthlyReport);
 
 export default superRouter;

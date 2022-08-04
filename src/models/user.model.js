@@ -5,34 +5,43 @@ const userSchema = new Schema(
   {
     name: {
       type: String,
+      required: true,
     },
-    agentCode: { type: Number },
+    agentCode: { type: Number, required: true },
     gender: {
       type: String,
+      required: true,
       enum: ["F", "M"],
     },
     phone: {
       type: String,
       unique: true,
+      required: true,
     },
     password: {
       type: String,
+      required: true,
     },
     location: {
       type: String,
+      required: true,
     },
     packageDetails: {
       name: {
         type: String,
+        required: true,
         enum: ["NANO", "MICRO", "MEGA", "GIGA", "OGA NA BOSS"],
       },
-      price: { type: String },
+      price: { type: Number, required: true },
     },
     amountPaid: { type: Number, default: 0 },
-    approved: { type: Boolean },
+    paid: { type: Boolean, default: false },
+    delivered: { type: Boolean, default: false },
+    approved: { type: Boolean, default: false },
     date: { type: Date, default: Date.now() },
     roles: {
       type: [String],
+      required: true,
       enum: ["CUSTOMER", "ADMIN", "SUPERADMIN"],
     },
   },
