@@ -25,6 +25,8 @@ class AuthService {
         foundUser._id.toString(),
         foundUser.phone!
       );
+      foundUser.lastLogin = new Date();
+      await foundUser.save();
       return { msg: "Logged in", access_token, status: 200 };
     } catch (err) {
       console.log(err);

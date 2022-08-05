@@ -1,5 +1,4 @@
 import express from "express";
-import passport from "passport";
 import UserController from "../controllers/user.controller";
 import Auth from "../middleware/auth.middleware";
 const superRouter = express.Router();
@@ -7,6 +6,12 @@ const superRouter = express.Router();
 superRouter
   .route("/create")
   .post(Auth.isSuperAdmin, UserController.createAdmin);
+
+superRouter
+  .route("/admin")
+  .get(Auth.isSuperAdmin, UserController.getAdminByCode);
+
+superRouter.route("/admins").get(Auth.isSuperAdmin, UserController.getAdmins);
 
 superRouter
   .route("/deliver")

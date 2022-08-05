@@ -1,5 +1,4 @@
 import PaymentModel from "../models/payment.model";
-import UserModel from "../models/user.model";
 import { AddPayment } from "../typings";
 import HistoryService from "./history.service";
 import UserService from "./user.service";
@@ -12,19 +11,20 @@ class PaymentService {
         phone,
         "CUSTOMER"
       );
-      if (status !== 200) return { msg, status };
+      if (!foundUser) return { msg, status };
       const newPayment = await PaymentModel.create({
-        customerId: foundUser!._id,
-        location: foundUser!.location,
-        packageDetails: foundUser!.packageDetails,
+        customerId: foundUser._id,
+        location: foundUser.location,
+        packageNames: foundUser.packageNames,
         amount,
-        agentCode: foundUser!.agentCode || 12345,
+        agentCode: foundUser.agentCode || 12345,
       });
-      foundUser!.amountPaid += amount;
-      if (foundUser!.amountPaid == foundUser!.packageDetails!.price!) {
-        foundUser!.paid = true;
+      foundUser.amountPaid += amount;
+      if (foundUser.amountPaid == foundUser.totalPrice) {
+        foundUser.paid = true;
       }
-      await foundUser!.save();
+      foundUser.lastPayment = new Date();
+      await foundUser.save();
       const { status: status2, msg: msg2 } =
         await HistoryService.addPaymentToHistory(newPayment._id.toString());
       if (status2 !== 201) return { msg2, status: status2 };

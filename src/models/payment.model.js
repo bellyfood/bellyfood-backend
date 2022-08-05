@@ -9,13 +9,10 @@ const paymentSchema = new Schema(
       type: String,
       required: true,
     },
-    packageDetails: {
-      name: {
-        type: String,
-        required: true,
-        enum: ["NANO", "MICRO", "MEGA", "GIGA", "OGA NA BOSS"],
-      },
-      price: { type: String, required: true },
+    packageNames: {
+      type: [String],
+      required: true,
+      enum: ["NANO", "MICRO", "MEGA", "GIGA", "OGA NA BOSS"],
     },
     amount: { type: Number, required: true },
     date: { type: Date, default: Date.now() },

@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import Config from "../config/db.config";
 import AuthService from "../services/auth.service";
 import HistoryService from "../services/history.service";
 import UserService from "../services/user.service";
@@ -7,19 +8,29 @@ import {
   CreateAdmin,
   CreateCustomer,
   CustomersFilter,
+  PackageName,
   UsersFilter,
 } from "../typings";
+import UserModel from "../models/user.model";
+import Utils from "../utils";
 
 class UserController {
   static async me(req: Request, res: Response, next: NextFunction) {
-    console.log(req.user!._id);
+    if (!req.user) return res.status(404).json({ msg: "Not found" });
+    // console.log(Config.connection);
+
+    // let agenda = Utils.createAgenda();
+    // const timeJob = Utils.time(agenda);
+    // await agenda.start();
+    // await timeJob.repeatEvery("10 seconds").save();
+
     const { msg, status, foundUser } = await UserService.getUserWithRole(
-      req.user!._id,
-      req.user!.roles[0]
+      req.user._id,
+      req.user.roles[0]
     );
-    if (status !== 200) return res.status(status).json({ msg });
+    if (!foundUser) return res.status(status).json({ msg });
     // console.log(foundUser);
-    const { password, ...others } = foundUser!.toObject();
+    const { password, ...others } = foundUser.toObject();
     // console.log(others);
 
     return res.status(200).json({ user: others });
@@ -34,9 +45,30 @@ class UserController {
       req.query.customerId,
       "CUSTOMER"
     );
-    if (status !== 200) return res.status(status).json({ msg });
-    const { password, ...others } = foundUser!.toObject();
+    if (!foundUser) return res.status(status).json({ msg });
+    const { password, ...others } = foundUser.toObject();
     return res.status(200).json({ user: others });
+  }
+
+  static async getAdminByCode(
+    req: Request<{}, {}, {}, { agentCode: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    const { msg, status, foundUser } = await UserService.getUserBy(
+      "agentCode",
+      req.query.agentCode,
+      "ADMIN"
+    );
+    if (!foundUser) return res.status(status).json({ msg });
+    const { password, ...others } = foundUser.toObject();
+    return res.status(200).json({ user: others });
+  }
+
+  static async getAdmins(req: Request, res: Response, next: NextFunction) {
+    const { msg, status, foundUsers } = await UserService.getAdmins();
+    if (status !== 200) return res.status(status).json({ msg });
+    return res.status(200).json({ users: foundUsers });
   }
 
   static async getCustomers(
@@ -44,14 +76,16 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const filter: CustomersFilter = {
-      role: "CUSTOMER",
-      approved: req.query.approved || false,
-      paid: req.query.paid || false,
-      delivered: req.query.delivered || false,
-    };
-    req.query.agentCode && (filter.agentCode = req.query.agentCode);
-    const { msg, status, foundUsers } = await UserService.getCustomers(filter);
+    const { agentCode, approved, paid, delivered } = req.query;
+    const filter: CustomersFilter = {};
+    approved && (filter.approved = approved);
+    paid && (filter.paid = paid);
+    delivered && (filter.delivered = delivered);
+    agentCode && (filter.agentCode = agentCode);
+    const { msg, status, foundUsers } = await UserService.getCustomers(
+      "CUSTOMER",
+      filter
+    );
     if (status !== 200) return res.status(status).json({ msg });
     return res.status(200).json({ users: foundUsers });
   }
@@ -88,7 +122,8 @@ class UserController {
     if (status !== 201) {
       return res.status(status).json({ msg });
     }
-    const { password, ...others } = newCustomer!.toObject();
+    if (!newCustomer) return res.status(status).json({ msg });
+    const { password, ...others } = newCustomer.toObject();
     return res.status(status).json({ msg, newCustomer: others });
   }
 
@@ -101,17 +136,19 @@ class UserController {
     if (status !== 201) {
       return res.status(status).json({ msg });
     }
-    const { password, ...others } = newAdmin!.toObject();
+    if (!newAdmin) return res.status(status).json({ msg });
+    const { password, ...others } = newAdmin.toObject();
     return res.status(status).json({ msg, newAdmin: others });
   }
 
   static async approveCustomer(
-    req: Request<{}, {}, {}, { customerId: string }>,
+    req: Request<{}, {}, {}, { customerId: string; agentCode: string }>,
     res: Response,
     next: NextFunction
   ) {
     const { status, msg } = await UserService.approveCustomer(
-      req.query.customerId
+      req.query.customerId,
+      req.query.agentCode
     );
     if (status !== 200) return res.status(status).json({ msg });
     return res.status(status).json({ msg });
@@ -130,49 +167,42 @@ class UserController {
   }
 
   static async renewPackage(
-    req: Request<{}, {}, {}, { customerId?: string }>,
+    req: Request<{}, {}, {}, { customerId: string; packageName: string }>,
     res: Response,
     next: NextFunction
   ) {
-    let status: number, msg: string;
-    if (!req.user!.roles.includes("ADMIN")) {
-      const { status: s, msg: m } = await UserService.renewPackage(
-        req.user!._id
-      );
-      status = s;
-      msg = m;
-    } else {
-      const { status: s, msg: m } = await UserService.renewPackage(
-        req.query.customerId!
-      );
-      status = s;
-      msg = m;
-    }
+    if (!req.user) return res.status(404).json({ msg: "Not found" });
+    if (!req.query.customerId)
+      return res
+        .status(405)
+        .json({ msg: "Customer id required for admin user" });
+    const { status, msg } = await UserService.renewPackage(
+      req.query.customerId,
+      req.query.packageName as PackageName
+    );
     if (status !== 200) return res.status(status).json({ msg });
     return res.status(status).json({ msg });
   }
 
   static async changePackage(
-    req: Request<{}, {}, {}, { customerId?: string; name?: string }>,
+    req: Request<
+      {},
+      {},
+      {},
+      { customerId: string; oldPkg: string; newPkg: string }
+    >,
     res: Response,
     next: NextFunction
   ) {
-    let status: number, msg: string;
-    if (!req.user!.roles.includes("ADMIN")) {
-      const { status: s, msg: m } = await UserService.changePackage(
-        req.user!._id,
-        req.user!.name
-      );
-      status = s;
-      msg = m;
-    } else {
-      const { status: s, msg: m } = await UserService.changePackage(
-        req.query.customerId!,
-        req.query.name!
-      );
-      status = s;
-      msg = m;
-    }
+    if (!req.query.customerId)
+      return res
+        .status(405)
+        .json({ msg: "Customer id required for admin user" });
+    const { status, msg } = await UserService.changePackage(
+      req.query.customerId,
+      req.query.newPkg,
+      req.query.oldPkg
+    );
     if (status !== 200) return res.status(status).json({ msg });
     return res.status(status).json({ msg });
   }
@@ -182,16 +212,21 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
+    if (!req.user) return res.status(404).json({ msg: "Not found" });
     let status: number, msg: string;
-    if (!req.user!.roles.includes("ADMIN")) {
+    if (!req.user.roles.includes("ADMIN")) {
       const { status: s, msg: m } = await UserService.deleteCustomer(
-        req.user!._id
+        req.user._id
       );
       status = s;
       msg = m;
     } else {
+      if (!req.query.customerId)
+        return res
+          .status(405)
+          .json({ msg: "Customer id required for admin user" });
       const { status: s, msg: m } = await UserService.deleteCustomer(
-        req.query.customerId!
+        req.query.customerId
       );
       status = s;
       msg = m;
@@ -205,11 +240,33 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
+    if (!req.user) return res.status(404).json({ msg: "Not found" });
     const { status, msg, payments } = await UserService.getPayments(
-      req.user!._id
+      req.user._id
     );
     if (status !== 200) return res.status(status).json({ msg });
     return res.status(status).json({ payments, msg });
+  }
+
+  static async getDailyHistoryByCode(
+    req: Request<{}, {}, {}, { day: string; agentCode: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    const date = new Date(req.query.day);
+    console.log(date);
+
+    console.log(date.getTime());
+    const { agentCode } = req.query;
+
+    const { data, status, msg } =
+      await HistoryService.getDailyHistoryByAgentCode(
+        date.getTime(),
+        parseInt(agentCode)
+      );
+    if (status !== 200) return res.status(status).json({ msg });
+
+    return res.status(status).json({ msg, data });
   }
 
   static async getHistoryByDay(
@@ -222,11 +279,26 @@ class UserController {
 
     console.log(date.getTime());
 
-    const { status, msg, histories } = await HistoryService.getHistoryByDay(
-      date.getTime()
-    );
+    const {
+      agentWork,
+      numNewCustomer,
+      numNewPayment,
+      numNewDelivery,
+      totalAmount,
+      histories,
+      status,
+      msg,
+    } = await HistoryService.generateDailyReport(date.getTime());
     if (status !== 200) return res.status(status).json({ msg });
-    return res.status(status).json({ msg, histories });
+    const data = {
+      agentWork,
+      numNewCustomer,
+      numNewPayment,
+      numNewDelivery,
+      totalAmount,
+      histories,
+    };
+    return res.status(status).json({ msg, data });
   }
 
   static async generateMonthlyReport(
@@ -235,61 +307,20 @@ class UserController {
     next: NextFunction
   ) {
     const date = new Date();
-    const { status, msg, histories } = await HistoryService.getHistoryByMonth(
-      date.getMonth() + 1,
-      date.getFullYear()
-    );
-    let numNewCustomer = 0;
-    let numNewPayment = 0;
 
-    interface Agent {
-      numNewCustomer?: number;
-      numNewPayment?: number;
-    }
-    interface AgentReport {
-      [key: string]: Agent | undefined;
-    }
-    let agentWork: AgentReport = {};
-    histories?.forEach((history) => {
-      const agentCode = history.agentCode!.toString();
-      if (history.type == "creation") {
-        numNewCustomer++;
-        if (
-          agentWork[agentCode] &&
-          agentWork[agentCode]!.numNewCustomer! >= 1
-        ) {
-          agentWork[agentCode] = {
-            ...agentWork[agentCode],
-            numNewCustomer: agentWork[agentCode]!.numNewCustomer! + 1,
-          };
-        } else {
-          agentWork[agentCode] = {
-            ...agentWork[agentCode],
-            numNewCustomer: 1,
-          };
-        }
-      } else if (history.type == "payment") {
-        numNewPayment++;
-        if (agentWork[agentCode] && agentWork[agentCode]!.numNewPayment! >= 1) {
-          agentWork[agentCode] = {
-            ...agentWork[agentCode],
-            numNewPayment: agentWork[agentCode]!.numNewPayment! + 1,
-          };
-        } else {
-          agentWork[agentCode] = {
-            ...agentWork[agentCode],
-            numNewPayment: 1,
-          };
-        }
-      }
-    });
+    const { agentWork, numNewCustomer, numNewPayment, histories, status, msg } =
+      await HistoryService.generateMonthlyReport(
+        date.getMonth() + 1,
+        date.getFullYear()
+      );
+
+    if (status !== 200) return res.status(status).json({ msg });
     const data = {
       agentWork,
       numNewCustomer,
       numNewPayment,
       histories,
     };
-    if (status !== 200) return res.status(status).json({ msg });
     return res.status(status).json({ msg, data });
   }
 }

@@ -7,7 +7,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    agentCode: { type: Number, required: true },
+    agentCode: { type: Number },
     gender: {
       type: String,
       required: true,
@@ -24,21 +24,19 @@ const userSchema = new Schema(
     },
     location: {
       type: String,
-      required: true,
     },
-    packageDetails: {
-      name: {
-        type: String,
-        required: true,
-        enum: ["NANO", "MICRO", "MEGA", "GIGA", "OGA NA BOSS"],
-      },
-      price: { type: Number, required: true },
+    packageNames: {
+      type: [String],
+      enum: ["NANO", "MICRO", "MEGA", "GIGA", "OGA NA BOSS"],
     },
+    totalPrice: { type: Number, default: 0 },
     amountPaid: { type: Number, default: 0 },
     paid: { type: Boolean, default: false },
     delivered: { type: Boolean, default: false },
     approved: { type: Boolean, default: false },
     date: { type: Date, default: Date.now() },
+    lastLogin: { type: Date },
+    lastPayment: { type: Date },
     roles: {
       type: [String],
       required: true,

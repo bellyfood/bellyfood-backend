@@ -2,19 +2,24 @@ import "dotenv/config";
 import mongoose from "mongoose";
 
 class Config {
+  static connection: string;
   static async connect() {
-    let connection;
     if (process.env.NODE_ENV === "production") {
-      connection = process.env.DATABASE_URL;
+      this.connection = process.env.DATABASE_URL!;
+    } else {
+      this.connection = process.env.DEV_DB_URL!;
     }
-    connection = process.env.DEV_DB_URL;
     try {
-      await mongoose.connect(connection!);
+      await mongoose.connect(this.connection);
       console.log("Database Connected");
     } catch (error) {
       console.log("Error connecting to database");
       throw error;
     }
+  }
+
+  static getConnectionString() {
+    return this.connection;
   }
 
   static async disconnect() {

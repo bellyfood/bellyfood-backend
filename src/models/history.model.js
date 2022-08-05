@@ -8,7 +8,11 @@ const historySchema = new Schema(
       type: String,
       required: true,
     },
-    type: { type: String, enum: ["creation", "payment"], required: true },
+    type: {
+      type: String,
+      enum: ["creation", "payment", "delivery"],
+      required: true,
+    },
     agentCode: { type: Number, required: true },
     location: {
       type: String,

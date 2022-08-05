@@ -11,6 +11,10 @@ export interface User {
   phone: string;
   password: string;
   roles: string[];
+  agentCode: number;
+  location: string;
+  approved: boolean;
+  packageNames: PackageName[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,9 +26,7 @@ export class UsersFilter {
   agentCode?: number;
 }
 
-export class CustomersFilter extends UsersFilter {
-  role: string;
-}
+export class CustomersFilter extends UsersFilter {}
 
 export class CreateAdmin {
   name: string;
@@ -43,8 +45,11 @@ export class CreateCustomer {
   location: string;
   roles: string[] = ["CUSTOMER"];
   approved: boolean = false;
-  packageDetails: { name: string; price: number };
+  packageNames: PackageName[];
+  priceModifier: number;
 }
+
+export type PackageName = "NANO" | "MICRO" | "MEGA" | "GIGA" | "OGA NA BOSS";
 
 export class AddPayment {
   phone: string;

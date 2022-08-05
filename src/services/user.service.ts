@@ -1,32 +1,17 @@
-import jwt from "jsonwebtoken";
 import * as argon from "argon2";
-import otpGenerator from "otp-generator";
 import UserModel from "../models/user.model";
 import {
-  AuthDto,
   CreateAdmin,
   CreateCustomer,
   CustomersFilter,
+  PackageName,
 } from "../typings";
-import HistoryModel from "../models/history.model";
 import HistoryService from "./history.service";
 import PaymentModel from "../models/payment.model";
 import PackageModel from "../models/package.model";
-
-interface LoginFilter {
-  phone: string;
-  name?: string;
-}
+import Utils from "../utils";
 
 class UserService {
-  static generateAgentCode() {
-    return otpGenerator.generate(4, {
-      lowerCaseAlphabets: false,
-      upperCaseAlphabets: false,
-      specialChars: false,
-    });
-  }
-
   static async getUserWithRole(customerId: string, role: string) {
     try {
       const foundUser = await UserModel.findOne({
@@ -55,12 +40,30 @@ class UserService {
     }
   }
 
-  static async getCustomers(filter: CustomersFilter) {
+  static async getAdmins() {
     try {
-      const foundUsers = await UserModel.find({
-        ...filter,
-        roles: filter.role,
-      });
+      const foundUsers = await UserModel.find({ roles: ["ADMIN"] });
+      return { msg: "Admins found", status: 200, foundUsers };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
+  static async getCustomers(role: string, filter?: CustomersFilter) {
+    try {
+      let foundUsers;
+      if (!filter) return { msg: "", status: 405 };
+      if (Object.keys(filter!).length === 0) {
+        foundUsers = await UserModel.find({
+          roles: role,
+        });
+      } else {
+        foundUsers = await UserModel.find({
+          ...filter,
+          roles: role,
+        });
+      }
       return { msg: "Users found", status: 200, foundUsers };
     } catch (err) {
       console.log(err);
@@ -74,28 +77,39 @@ class UserService {
     name,
     gender,
     location,
-    agentCode,
-    packageDetails,
+    packageNames,
+    priceModifier,
   }: CreateCustomer) {
     try {
+      const packageName = packageNames[0];
+      const {
+        status: status2,
+        msg: msg2,
+        price,
+      } = await UserService.getPackagePrice(packageName);
+      if (status2 !== 200) return { msg: msg2, status: status2 };
       const newCustomer = await UserModel.create({
         phone,
         password: await argon.hash(password),
         name,
         gender,
-        agentCode,
         roles: ["CUSTOMER"],
         approved: false,
         location,
-        packageDetails,
+        packageNames,
+        totalPrice: price! * priceModifier,
       });
       return {
         newCustomer,
         msg: "Customer created successfully, pending approval",
         status: 201,
       };
-    } catch (err) {
+    } catch (err: any) {
+      console.log(err.code);
+      console.log(err.message);
       console.log(err);
+      if (err.code == 11000)
+        return { msg: "Duplicate phone number not allowed", status: 405 };
       return { msg: "An error occurred", status: 500 };
     }
   }
@@ -107,31 +121,36 @@ class UserService {
         password: await argon.hash(password),
         name,
         gender,
-        agentCode: UserService.generateAgentCode(),
+        agentCode: Utils.generateAgentCode(),
         approved: true,
         roles: ["ADMIN"],
       });
       return { newAdmin, msg: "Admin created successfully", status: 201 };
-    } catch (err) {
+    } catch (err: any) {
+      console.log(err.code);
+      console.log(err.message);
       console.log(err);
+      if (err.code == 11000)
+        return { msg: "Duplicate phone number not allowed", status: 405 };
       return { msg: "An error occurred", status: 500 };
     }
   }
 
-  static async approveCustomer(customerId: string) {
+  static async approveCustomer(customerId: string, agentCode: string) {
     try {
       const {
         foundUser,
         status: customerS,
         msg,
       } = await UserService.getUserWithRole(customerId, "CUSTOMER");
-      if (customerS !== 200) return { msg, status: customerS };
-      foundUser!.approved = true;
-      await foundUser!.save();
+      if (!foundUser) return { msg, status: customerS };
+      foundUser.approved = true;
+      foundUser.agentCode = parseInt(agentCode);
+      await foundUser.save();
       const { status, msg: msg2 } = await HistoryService.addCustomerToHistory(
         customerId
       );
-      if (status !== 201) return { msg2, status };
+      if (status !== 201) return { msg: msg2, status };
       return { msg: "Approved customer", status: status };
     } catch (err) {
       console.log(err);
@@ -179,9 +198,12 @@ class UserService {
         customerId,
         "CUSTOMER"
       );
-      if (status !== 200) return { msg, status };
-      foundUser!.delivered = true;
-      await foundUser!.save();
+      if (!foundUser) return { msg, status };
+      foundUser.delivered = true;
+      await foundUser.save();
+      const { status: status2, msg: msg2 } =
+        await HistoryService.addDeliveryToHistory(customerId);
+      if (status2 !== 201) return { msg: msg2, status: status2 };
       return {
         msg: "Delivered to customer",
         status,
@@ -192,21 +214,24 @@ class UserService {
     }
   }
 
-  static async renewPackage(customerId: string) {
+  static async renewPackage(customerId: string, packageName: PackageName) {
     try {
       const { status, msg, foundUser } = await UserService.getUserWithRole(
         customerId,
         "CUSTOMER"
       );
-      if (status !== 200) return { msg, status };
-      if (foundUser!.amountPaid < foundUser!.packageDetails!.price!) {
+      if (!foundUser) return { msg, status };
+      if (!foundUser.packageNames.includes(packageName))
+        return { status: 405, msg: "User didn't subscribe to that package" };
+      const { price } = await UserService.getPackagePrice(packageName);
+      if (foundUser.amountPaid < price!) {
         return {
           msg: "Customer hasn't finished paying current package",
           status: 405,
         };
       }
-      foundUser!.amountPaid = 0;
-      await foundUser!.save();
+      foundUser.amountPaid = 0;
+      await foundUser.save();
       return {
         msg: "Renewed package",
         status,
@@ -217,32 +242,30 @@ class UserService {
     }
   }
 
-  static async changePackage(customerId: string, name: string) {
+  static async changePackage(
+    customerId: string,
+    newPkgName: string,
+    oldPkgName: string
+  ) {
     try {
       const { status, msg, foundUser } = await UserService.getUserWithRole(
         customerId,
         "CUSTOMER"
       );
-      if (status !== 200) return { msg, status };
-      if (foundUser!.amountPaid < foundUser!.packageDetails!.price!) {
-        return {
-          msg: "Customer hasn't finished paying current package",
-          status: 405,
-        };
-      }
-      foundUser!.amountPaid = 0;
+      if (!foundUser) return { msg, status };
+      if (!foundUser.packageNames.includes(oldPkgName))
+        return { status: 405, msg: "User didn't subscribe to that package" };
+      const { price: oldPrice } = await UserService.getPackagePrice(oldPkgName);
+      const index = foundUser.packageNames.indexOf(oldPkgName);
       const {
         status: status2,
         msg: msg2,
         price,
-      } = await UserService.getPackagePrice(name);
+      } = await UserService.getPackagePrice(newPkgName);
       if (status2 !== 200) return { msg: msg2, status: status2 };
-      type pName = "NANO" | "MICRO" | "MEGA" | "GIGA" | "OGA NA BOSS";
-      foundUser!.packageDetails = {
-        name: name! as pName,
-        price: price!,
-      };
-      await foundUser!.save();
+      foundUser.packageNames.splice(index, 1, newPkgName);
+      foundUser.totalPrice = foundUser.totalPrice - oldPrice! + price!;
+      await foundUser.save();
       return {
         msg: "Changed package",
         status: status2,
@@ -259,7 +282,8 @@ class UserService {
         _id: customerId,
         roles: "CUSTOMER",
       });
-      if (foundUser!.amountPaid < foundUser!.packageDetails!.price!) {
+      if (!foundUser) return { msg: "Not found", status: 404 };
+      if (foundUser.amountPaid < foundUser.totalPrice) {
         return {
           msg: "Customer hasn't finished paying current package",
           status: 405,

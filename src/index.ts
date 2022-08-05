@@ -93,21 +93,36 @@ app.use(
 
 app.get("/api/v1/test", async (req: Request, res: Response) => {
   //"NANO", "MICRO", "MEGA", "GIGA", "OGA NA BOSS"
-  // await packageModel.create({
-  //   name: "NANO",
-  // });
-  // await packageModel.create({
-  //   name: "MICRO",
-  // });
-  // await packageModel.create({
-  //   name: "MEGA",
-  // });
-  // await packageModel.create({
-  //   name: "GIGA",
-  // });
-  // await packageModel.create({
-  //   name: "OGA NA BOSS",
-  // });
+  // await PackageModel.updateOne(
+  //   {
+  //     name: "NANO",
+  //   },
+  //   { $set: { price: 10000 } }
+  // );
+  // await PackageModel.updateOne(
+  //   {
+  //     name: "MICRO",
+  //   },
+  //   { $set: { price: 20000 } }
+  // );
+  // await PackageModel.updateOne(
+  //   {
+  //     name: "MEGA",
+  //   },
+  //   { $set: { price: 30000 } }
+  // );
+  // await PackageModel.updateOne(
+  //   {
+  //     name: "GIGA",
+  //   },
+  //   { $set: { price: 40000 } }
+  // );
+  // await PackageModel.updateOne(
+  //   {
+  //     name: "OGA NA BOSS",
+  //   },
+  //   { $set: { price: 50000 } }
+  // );
   return res.json(await PackageModel.find());
 });
 app.use("*", (req, res: Response, next) => {
