@@ -51,7 +51,7 @@ passport.use(
   })
 );
 
-const allowedOrigins = ["http://localhost:8080"];
+const allowedOrigins = ["http://localhost:3000"];
 //allowing CORS
 const corsOption: CorsOptions = {
   origin: (

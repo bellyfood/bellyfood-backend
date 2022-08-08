@@ -86,7 +86,7 @@ class UserController {
       "CUSTOMER",
       filter
     );
-    if (status !== 200) return res.status(status).json({ msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
     return res.status(200).json({ users: foundUsers });
   }
 
@@ -97,7 +97,7 @@ class UserController {
   ) {
     const { msg, status, access_token } = await AuthService.login(req.body);
     if (status !== 200) {
-      return res.status(status).json({ msg });
+      return res.status(status).json({ msg, status });
     }
     return res
       .status(status)
