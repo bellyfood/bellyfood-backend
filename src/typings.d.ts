@@ -19,7 +19,13 @@ export interface User {
   updatedAt: Date;
 }
 
-export class UsersFilter {
+export class Pagination {
+  limit?: number = 10;
+  page?: number = 0;
+}
+
+export class UsersFilter extends Pagination {
+  [key: string]: any;
   approved?: boolean;
   paid?: boolean;
   delivered?: boolean;

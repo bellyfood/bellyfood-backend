@@ -5,6 +5,7 @@ import {
   CreateCustomer,
   CustomersFilter,
   PackageName,
+  Pagination,
 } from "../typings";
 import HistoryService from "./history.service";
 import PaymentModel from "../models/payment.model";
@@ -40,9 +41,21 @@ class UserService {
     }
   }
 
-  static async getAdmins() {
+  static async getAdmins(pagination?: Pagination) {
     try {
-      const foundUsers = await UserModel.find({ roles: ["ADMIN"] });
+      if (!pagination)
+        return {
+          msg: "Admins found",
+          status: 200,
+          foundUsers: await UserModel.find({ roles: ["ADMIN"] }),
+        };
+      const page = pagination.page || 0;
+      const limit = pagination.limit || 10;
+      const foundUsers = await UserModel.find(
+        { roles: ["ADMIN"] },
+        {},
+        { skip: page * limit, limit: limit }
+      ).select("-password");
       return { msg: "Admins found", status: 200, foundUsers };
     } catch (err) {
       console.log(err);
@@ -50,19 +63,33 @@ class UserService {
     }
   }
 
-  static async getCustomers(role: string, filter?: CustomersFilter) {
+  static async getCustomers(
+    role: string,
+    pagination: Pagination,
+    filter?: CustomersFilter
+  ) {
     try {
       let foundUsers;
       if (!filter) return { msg: "", status: 405 };
+      const page = pagination.page || 0;
+      const limit = pagination.limit || 10;
       if (Object.keys(filter!).length === 0) {
-        foundUsers = await UserModel.find({
-          roles: role,
-        });
+        foundUsers = await UserModel.find(
+          {
+            roles: role,
+          },
+          {},
+          { skip: page * limit, limit: limit }
+        ).select("-password");
       } else {
-        foundUsers = await UserModel.find({
-          ...filter,
-          roles: role,
-        });
+        foundUsers = await UserModel.find(
+          {
+            ...filter,
+            roles: role,
+          },
+          {},
+          { skip: page * limit, limit: limit }
+        ).select("-password");
       }
       return { msg: "Users found", status: 200, foundUsers };
     } catch (err) {
