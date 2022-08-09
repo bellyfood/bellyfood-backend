@@ -92,8 +92,10 @@ app.post("/api/v1/super", async (req: Request, res: Response) => {
       return res
         .status(405)
         .json({ msg: "Super Admin already exists", status: 405 });
-    const newSuper = await UserModel.create(req.body);
-    const { password, ...others } = newSuper.toObject();
+    const { password } = req.body;
+    const hash = await argon.hash(password);
+    const newSuper = await UserModel.create({ ...req.body, password: hash });
+    const { password: psw, ...others } = newSuper.toObject();
     return res.status(201).json({ msg: "Super Admin created successfully" });
   } catch (err) {
     console.log(err);
