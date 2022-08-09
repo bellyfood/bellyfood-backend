@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { CookieOptions, NextFunction, Request, Response } from "express";
 import Config from "../config/db.config";
 import AuthService from "../services/auth.service";
 import HistoryService from "../services/history.service";
@@ -99,13 +99,22 @@ class UserController {
     if (status !== 200) {
       return res.status(status).json({ msg, status });
     }
+    const cookieOptions: CookieOptions = {
+      maxAge: 4 * 60 * 60 * 1000,
+    };
+    if (process.env.NODE_ENV === "production") {
+      cookieOptions.secure = true;
+      cookieOptions.httpOnly = false;
+      cookieOptions.path = "/";
+      cookieOptions.sameSite = "none";
+    } else {
+      cookieOptions.httpOnly = false;
+      cookieOptions.path = "/";
+      cookieOptions.sameSite = false;
+    }
     return res
       .status(status)
-      .cookie("bellyfood", access_token, {
-        maxAge: 4 * 60 * 60 * 1000,
-        secure: process.env.NODE_ENV === "production" ? true : false,
-        httpOnly: false,
-      })
+      .cookie("bellyfood", access_token, cookieOptions)
       .json({ access_token, msg });
   }
 
