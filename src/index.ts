@@ -53,7 +53,7 @@ passport.use(
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://bellyfood-frontend.vercel.app/",
+  "https://bellyfood-frontend.vercel.app",
 ];
 //allowing CORS
 const corsOption: CorsOptions = {
