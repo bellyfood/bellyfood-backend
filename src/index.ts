@@ -71,7 +71,7 @@ const corsOption: CorsOptions = {
   },
   methods: ["POST", "PUT", "GET", "OPTIONS", "HEAD", "DELETE"],
   credentials: true,
-  exposedHeaders: ["set-cookie"],
+  exposedHeaders: ["Set-Cookie"],
 };
 app.use(cors(corsOption));
 if (process.env.NODE_ENV === "production") app.enable("trust proxy");
