@@ -104,12 +104,8 @@ class UserController {
     };
     if (process.env.NODE_ENV === "production") {
       cookieOptions.secure = true;
-      cookieOptions.httpOnly = true;
-      cookieOptions.path = "/";
       cookieOptions.sameSite = "none";
     } else {
-      cookieOptions.httpOnly = false;
-      cookieOptions.path = "/";
       cookieOptions.sameSite = false;
     }
     return res
