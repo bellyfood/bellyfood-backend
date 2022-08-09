@@ -71,10 +71,10 @@ const corsOption: CorsOptions = {
   },
   methods: ["POST", "PUT", "GET", "OPTIONS", "HEAD", "DELETE"],
   credentials: true,
-  exposedHeaders: ["x-auth-token", "set-cookie"],
+  exposedHeaders: ["set-cookie"],
 };
 app.use(cors(corsOption));
-if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
+if (process.env.NODE_ENV === "production") app.enable("trust proxy");
 app.use("/api/v1/auth", authRouter);
 app.use(
   "/api/v1/users",
