@@ -16,7 +16,8 @@ import Utils from "../utils";
 
 class UserController {
   static async me(req: Request, res: Response, next: NextFunction) {
-    if (!req.user) return res.status(404).json({ msg: "Not found" });
+    if (!req.user)
+      return res.status(404).json({ msg: "Not found", status: 404 });
     // console.log(Config.connection);
 
     // let agenda = Utils.createAgenda();
@@ -28,12 +29,12 @@ class UserController {
       req.user._id,
       req.user.roles[0]
     );
-    if (!foundUser) return res.status(status).json({ msg });
+    if (!foundUser) return res.status(status).json({ msg, status });
     // console.log(foundUser);
     const { password, ...others } = foundUser.toObject();
     // console.log(others);
 
-    return res.status(200).json({ user: others });
+    return res.status(200).json({ user: others, status });
   }
 
   static async getUser(
@@ -45,9 +46,9 @@ class UserController {
       req.query.customerId,
       "CUSTOMER"
     );
-    if (!foundUser) return res.status(status).json({ msg });
+    if (!foundUser) return res.status(status).json({ msg, status });
     const { password, ...others } = foundUser.toObject();
-    return res.status(200).json({ user: others });
+    return res.status(200).json({ user: others, status });
   }
 
   static async getAdminByCode(
@@ -60,15 +61,15 @@ class UserController {
       req.query.agentCode,
       "ADMIN"
     );
-    if (!foundUser) return res.status(status).json({ msg });
+    if (!foundUser) return res.status(status).json({ msg, status });
     const { password, ...others } = foundUser.toObject();
-    return res.status(200).json({ user: others });
+    return res.status(200).json({ user: others, status });
   }
 
   static async getAdmins(req: Request, res: Response, next: NextFunction) {
     const { msg, status, foundUsers } = await UserService.getAdmins();
-    if (status !== 200) return res.status(status).json({ msg });
-    return res.status(200).json({ users: foundUsers });
+    if (status !== 200) return res.status(status).json({ msg, status });
+    return res.status(200).json({ users: foundUsers, status });
   }
 
   static async getCustomers(
@@ -87,7 +88,7 @@ class UserController {
       filter
     );
     if (status !== 200) return res.status(status).json({ msg, status });
-    return res.status(200).json({ users: foundUsers });
+    return res.status(200).json({ users: foundUsers, status });
   }
 
   static async login(
@@ -111,11 +112,11 @@ class UserController {
     return res
       .status(status)
       .cookie("bellyfood", access_token, cookieOptions)
-      .json({ access_token, msg });
+      .json({ access_token, msg, status });
   }
 
   static async logout(req: Request, res: Response, next: NextFunction) {
-    return res.clearCookie("bellyfood").json({ msg: "Logged out" });
+    return res.clearCookie("bellyfood").json({ msg: "Logged out", status });
   }
 
   static async createCustomer(
@@ -129,9 +130,9 @@ class UserController {
     if (status !== 201) {
       return res.status(status).json({ msg });
     }
-    if (!newCustomer) return res.status(status).json({ msg });
+    if (!newCustomer) return res.status(status).json({ msg, status });
     const { password, ...others } = newCustomer.toObject();
-    return res.status(status).json({ msg, newCustomer: others });
+    return res.status(status).json({ msg, newCustomer: others, status });
   }
 
   static async createAdmin(
@@ -141,11 +142,11 @@ class UserController {
   ) {
     const { msg, status, newAdmin } = await UserService.createAdmin(req.body);
     if (status !== 201) {
-      return res.status(status).json({ msg });
+      return res.status(status).json({ msg, status });
     }
-    if (!newAdmin) return res.status(status).json({ msg });
+    if (!newAdmin) return res.status(status).json({ msg, status });
     const { password, ...others } = newAdmin.toObject();
-    return res.status(status).json({ msg, newAdmin: others });
+    return res.status(status).json({ msg, newAdmin: others, status });
   }
 
   static async approveCustomer(
@@ -157,8 +158,8 @@ class UserController {
       req.query.customerId,
       req.query.agentCode
     );
-    if (status !== 200) return res.status(status).json({ msg });
-    return res.status(status).json({ msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
+    return res.status(status).json({ msg, status });
   }
 
   static async deliverToUser(
@@ -169,8 +170,8 @@ class UserController {
     const { msg, status } = await UserService.deliverToCustomer(
       req.query.customerId
     );
-    if (status !== 200) return res.status(status).json({ msg });
-    return res.status(status).json({ msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
+    return res.status(status).json({ msg, status });
   }
 
   static async renewPackage(
@@ -178,17 +179,18 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    if (!req.user) return res.status(404).json({ msg: "Not found" });
+    if (!req.user)
+      return res.status(404).json({ msg: "Not found", status: 404 });
     if (!req.query.customerId)
       return res
         .status(405)
-        .json({ msg: "Customer id required for admin user" });
+        .json({ msg: "Customer id required for admin user", status: 405 });
     const { status, msg } = await UserService.renewPackage(
       req.query.customerId,
       req.query.packageName as PackageName
     );
-    if (status !== 200) return res.status(status).json({ msg });
-    return res.status(status).json({ msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
+    return res.status(status).json({ msg, status });
   }
 
   static async changePackage(
@@ -204,14 +206,14 @@ class UserController {
     if (!req.query.customerId)
       return res
         .status(405)
-        .json({ msg: "Customer id required for admin user" });
+        .json({ msg: "Customer id required for admin user", status: 405 });
     const { status, msg } = await UserService.changePackage(
       req.query.customerId,
       req.query.newPkg,
       req.query.oldPkg
     );
-    if (status !== 200) return res.status(status).json({ msg });
-    return res.status(status).json({ msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
+    return res.status(status).json({ msg, status });
   }
 
   static async deleteCustomer(
@@ -219,7 +221,8 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    if (!req.user) return res.status(404).json({ msg: "Not found" });
+    if (!req.user)
+      return res.status(404).json({ msg: "Not found", status: 404 });
     let status: number, msg: string;
     if (!req.user.roles.includes("ADMIN")) {
       const { status: s, msg: m } = await UserService.deleteCustomer(
@@ -231,15 +234,15 @@ class UserController {
       if (!req.query.customerId)
         return res
           .status(405)
-          .json({ msg: "Customer id required for admin user" });
+          .json({ msg: "Customer id required for admin user", status: 405 });
       const { status: s, msg: m } = await UserService.deleteCustomer(
         req.query.customerId
       );
       status = s;
       msg = m;
     }
-    if (status !== 200) return res.status(status).json({ msg });
-    return res.status(status).json({ msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
+    return res.status(status).json({ msg, status });
   }
 
   static async getPaymentDetails(
@@ -247,12 +250,13 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    if (!req.user) return res.status(404).json({ msg: "Not found" });
+    if (!req.user)
+      return res.status(404).json({ msg: "Not found", status: 404 });
     const { status, msg, payments } = await UserService.getPayments(
       req.user._id
     );
-    if (status !== 200) return res.status(status).json({ msg });
-    return res.status(status).json({ payments, msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
+    return res.status(status).json({ payments, msg, status });
   }
 
   static async getDailyHistoryByCode(
@@ -271,9 +275,9 @@ class UserController {
         date.getTime(),
         parseInt(agentCode)
       );
-    if (status !== 200) return res.status(status).json({ msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
 
-    return res.status(status).json({ msg, data });
+    return res.status(status).json({ msg, data, status });
   }
 
   static async getHistoryByDay(
@@ -296,7 +300,7 @@ class UserController {
       status,
       msg,
     } = await HistoryService.generateDailyReport(date.getTime());
-    if (status !== 200) return res.status(status).json({ msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
     const data = {
       agentWork,
       numNewCustomer,
@@ -305,7 +309,7 @@ class UserController {
       totalAmount,
       histories,
     };
-    return res.status(status).json({ msg, data });
+    return res.status(status).json({ msg, data, status });
   }
 
   static async generateMonthlyReport(
@@ -321,14 +325,14 @@ class UserController {
         date.getFullYear()
       );
 
-    if (status !== 200) return res.status(status).json({ msg });
+    if (status !== 200) return res.status(status).json({ msg, status });
     const data = {
       agentWork,
       numNewCustomer,
       numNewPayment,
       histories,
     };
-    return res.status(status).json({ msg, data });
+    return res.status(status).json({ msg, data, status });
   }
 }
 

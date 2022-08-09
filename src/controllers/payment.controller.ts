@@ -11,8 +11,8 @@ class PaymentController {
     const { status, msg, newPayment } = await PaymentService.addPayment(
       req.body
     );
-    if (status !== 201) return res.status(status).json({ msg });
-    return res.status(status).json({ msg, newPayment });
+    if (status !== 201) return res.status(status).json({ msg, status });
+    return res.status(status).json({ msg, newPayment, status });
   }
 }
 
