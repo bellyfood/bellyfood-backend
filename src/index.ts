@@ -51,10 +51,7 @@ passport.use(
   })
 );
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://bellyfood-frontend.vercel.app",
-];
+const allowedOrigins = [process.env.FRONTEND_URL!];
 //allowing CORS
 const corsOption: CorsOptions = {
   origin: (
