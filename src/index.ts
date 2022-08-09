@@ -69,7 +69,7 @@ const corsOption: CorsOptions = {
     }
     return callback(null, true);
   },
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  methods: ["POST", "PUT", "GET", "OPTIONS", "HEAD", "DELETE"],
   credentials: true,
   exposedHeaders: ["x-auth-token", "set-cookie"],
 };
