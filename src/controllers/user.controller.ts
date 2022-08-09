@@ -103,6 +103,8 @@ class UserController {
       .status(status)
       .cookie("bellyfood", access_token, {
         maxAge: 4 * 60 * 60 * 1000,
+        secure: process.env.NODE_ENV === "production" ? true : false,
+        httpOnly: false,
       })
       .json({ access_token, msg });
   }
