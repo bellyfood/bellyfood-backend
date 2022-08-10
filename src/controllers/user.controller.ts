@@ -52,6 +52,18 @@ class UserController {
     return res.status(200).json({ user: others, status });
   }
 
+  static async searchByName(
+    req: Request<{}, {}, {}, { name: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    const { msg, status, foundUsers } = await UserService.searchByName(
+      req.query.name
+    );
+    if (!foundUsers) return res.status(status).json({ msg, status });
+    return res.status(200).json({ users: foundUsers, status });
+  }
+
   static async getAdminByCode(
     req: Request<{}, {}, {}, { agentCode: string }>,
     res: Response,
@@ -86,7 +98,8 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { agentCode, approved, paid, delivered, page, limit } = req.query;
+    const { agentCode, approved, paid, delivered, page, limit, name } =
+      req.query;
     const filter: CustomersFilter = {
       approved,
       paid,
@@ -95,17 +108,36 @@ class UserController {
     };
     console.log(filter);
     Object.keys(filter).forEach((key) => {
-      if (!filter[key] && filter[key] !== false) {
+      if (!filter[key] && filter[key] !== false && filter[key] !== 0) {
         delete filter[key];
       }
     });
     console.log(filter);
-    const { msg, status, foundUsers } = await UserService.getCustomers(
-      "CUSTOMER",
-      { page: page || 0, limit: limit || 10 },
-      filter
-    );
-    if (!foundUsers) return res.status(status).json({ msg, status });
+    let msg, status, foundUsers;
+    if (Object.keys(filter).length === 0) {
+      const data = await UserService.getAllCustomers(
+        "CUSTOMER",
+        { page: page || 0, limit: limit || 10 },
+        name
+      );
+      msg = data.msg;
+      status = data.status;
+      foundUsers = data.foundUsers;
+      if (!foundUsers) return res.status(status).json({ msg, status });
+    } else {
+      console.log(name);
+      const data = await UserService.getCustomers(
+        "CUSTOMER",
+        { page: page || 0, limit: limit || 10 },
+        filter,
+        name
+      );
+      msg = data.msg;
+      status = data.status;
+      foundUsers = data.foundUsers;
+      if (!foundUsers) return res.status(status).json({ msg, status });
+    }
+
     return res
       .status(200)
       .json({ users: foundUsers, status, count: foundUsers.length });
@@ -136,7 +168,9 @@ class UserController {
   }
 
   static async logout(req: Request, res: Response, next: NextFunction) {
-    return res.clearCookie("bellyfood").json({ msg: "Logged out", status });
+    return res
+      .clearCookie("bellyfood")
+      .json({ msg: "Logged out", status: 200 });
   }
 
   static async createCustomer(

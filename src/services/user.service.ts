@@ -41,6 +41,19 @@ class UserService {
     }
   }
 
+  static async searchByName(name: string) {
+    try {
+      const foundUsers = await UserModel.find({
+        $text: { $search: name },
+      }).exec();
+      if (!foundUsers) return { msg: "Not found", status: 404 };
+      return { msg: "Users found", status: 200, foundUsers };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
   static async getAdmins(pagination?: Pagination) {
     try {
       if (!pagination)
@@ -63,17 +76,16 @@ class UserService {
     }
   }
 
-  static async getCustomers(
+  static async getAllCustomers(
     role: string,
     pagination: Pagination,
-    filter?: CustomersFilter
+    name?: string
   ) {
     try {
       let foundUsers;
-      if (!filter) return { msg: "", status: 405 };
       const page = pagination.page || 0;
       const limit = pagination.limit || 10;
-      if (Object.keys(filter!).length === 0) {
+      if (!name) {
         foundUsers = await UserModel.find(
           {
             roles: role,
@@ -84,8 +96,8 @@ class UserService {
       } else {
         foundUsers = await UserModel.find(
           {
-            ...filter,
             roles: role,
+            $text: { $search: name },
           },
           {},
           { skip: page * limit, limit: limit }
@@ -97,6 +109,46 @@ class UserService {
       return { msg: "An error occurred", status: 500 };
     }
   }
+
+  static async getCustomers(
+    role: string,
+    pagination: Pagination,
+    filter: CustomersFilter,
+    name?: string
+  ) {
+    try {
+      let foundUsers;
+      const page = pagination.page || 0;
+      const limit = pagination.limit || 10;
+
+      if (!name) {
+        foundUsers = await UserModel.find(
+          {
+            ...filter,
+            roles: role,
+          },
+          {},
+          { skip: page * limit, limit: limit }
+        ).select("-password");
+      } else {
+        foundUsers = await UserModel.find(
+          {
+            ...filter,
+            roles: role,
+            $text: { $search: name },
+          },
+          {},
+          { skip: page * limit, limit: limit }
+        ).select("-password");
+      }
+      return { msg: "Users found", status: 200, foundUsers };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
+  // $text: { $search: "name" },
 
   static async createCustomer({
     phone,

@@ -9,6 +9,8 @@ userRouter.route("/get").get(Auth.isAdmin, UserController.getUser);
 
 userRouter.route("/customers").get(Auth.isAdmin, UserController.getCustomers);
 
+userRouter.route("/search").get(Auth.isAdmin, UserController.searchByName);
+
 userRouter
   .route("/history")
   .get(Auth.isAdmin, UserController.getDailyHistoryByCode);
