@@ -36,7 +36,9 @@ class UserController {
       const { password, ...others } = foundUser.toObject();
       // console.log(others);
 
-      return res.status(200).json({ user: others, status });
+      return res
+        .status(200)
+        .json({ user: others, status, msg: req.headers.cookie });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });
@@ -184,7 +186,7 @@ class UserController {
         return res.status(status).json({ msg, status });
       }
       const cookieOptions: CookieOptions = {
-        maxAge: 4 * 60 * 60 * 1000,
+        expires: new Date(Date.now() + 4 * 60 * 60 * 1000),
       };
       if (process.env.NODE_ENV === "production") {
         cookieOptions.secure = true;
@@ -192,6 +194,7 @@ class UserController {
       } else {
         cookieOptions.sameSite = false;
       }
+      console.log(access_token);
       return res
         .status(status)
         .cookie("bellyfood", access_token, cookieOptions)
@@ -203,8 +206,17 @@ class UserController {
   }
 
   static async logout(req: Request, res: Response, next: NextFunction) {
+    const cookieOptions: CookieOptions = {
+      expires: new Date(1),
+    };
+    if (process.env.NODE_ENV === "production") {
+      cookieOptions.secure = true;
+      cookieOptions.sameSite = "none";
+    } else {
+      cookieOptions.sameSite = false;
+    }
     return res
-      .clearCookie("bellyfood")
+      .cookie("bellyfood", "", cookieOptions)
       .json({ msg: "Logged out", status: 200 });
   }
 
