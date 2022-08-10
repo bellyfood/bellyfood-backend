@@ -17,25 +17,30 @@ import Utils from "../utils";
 
 class UserController {
   static async me(req: Request, res: Response, next: NextFunction) {
-    if (!req.user)
-      return res.status(404).json({ msg: "Not found", status: 404 });
-    // console.log(Config.connection);
+    try {
+      if (!req.user)
+        return res.status(404).json({ msg: "Not found", status: 404 });
+      // console.log(Config.connection);
 
-    // let agenda = Utils.createAgenda();
-    // const timeJob = Utils.time(agenda);
-    // await agenda.start();
-    // await timeJob.repeatEvery("10 seconds").save();
+      // let agenda = Utils.createAgenda();
+      // const timeJob = Utils.time(agenda);
+      // await agenda.start();
+      // await timeJob.repeatEvery("10 seconds").save();
 
-    const { msg, status, foundUser } = await UserService.getUserWithRole(
-      req.user._id,
-      req.user.roles[0]
-    );
-    if (!foundUser) return res.status(status).json({ msg, status });
-    // console.log(foundUser);
-    const { password, ...others } = foundUser.toObject();
-    // console.log(others);
+      const { msg, status, foundUser } = await UserService.getUserWithRole(
+        req.user._id,
+        req.user.roles[0]
+      );
+      if (!foundUser) return res.status(status).json({ msg, status });
+      // console.log(foundUser);
+      const { password, ...others } = foundUser.toObject();
+      // console.log(others);
 
-    return res.status(200).json({ user: others, status });
+      return res.status(200).json({ user: others, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async getUser(
@@ -43,13 +48,18 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { msg, status, foundUser } = await UserService.getUserWithRole(
-      req.query.customerId,
-      "CUSTOMER"
-    );
-    if (!foundUser) return res.status(status).json({ msg, status });
-    const { password, ...others } = foundUser.toObject();
-    return res.status(200).json({ user: others, status });
+    try {
+      const { msg, status, foundUser } = await UserService.getUserWithRole(
+        req.query.customerId,
+        "CUSTOMER"
+      );
+      if (!foundUser) return res.status(status).json({ msg, status });
+      const { password, ...others } = foundUser.toObject();
+      return res.status(200).json({ user: others, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async searchByName(
@@ -57,11 +67,16 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { msg, status, foundUsers } = await UserService.searchByName(
-      req.query.name
-    );
-    if (!foundUsers) return res.status(status).json({ msg, status });
-    return res.status(200).json({ users: foundUsers, status });
+    try {
+      const { msg, status, foundUsers } = await UserService.searchByName(
+        req.query.name
+      );
+      if (!foundUsers) return res.status(status).json({ msg, status });
+      return res.status(200).json({ users: foundUsers, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async getAdminByCode(
@@ -69,14 +84,19 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { msg, status, foundUser } = await UserService.getUserBy(
-      "agentCode",
-      req.query.agentCode,
-      "ADMIN"
-    );
-    if (!foundUser) return res.status(status).json({ msg, status });
-    const { password, ...others } = foundUser.toObject();
-    return res.status(200).json({ user: others, status });
+    try {
+      const { msg, status, foundUser } = await UserService.getUserBy(
+        "agentCode",
+        req.query.agentCode,
+        "ADMIN"
+      );
+      if (!foundUser) return res.status(status).json({ msg, status });
+      const { password, ...others } = foundUser.toObject();
+      return res.status(200).json({ user: others, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async getAdmins(
@@ -84,13 +104,18 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { msg, status, foundUsers } = await UserService.getAdmins({
-      ...req.query,
-    });
-    if (!foundUsers) return res.status(status).json({ msg, status });
-    return res
-      .status(200)
-      .json({ users: foundUsers, status, count: foundUsers.length });
+    try {
+      const { msg, status, foundUsers } = await UserService.getAdmins({
+        ...req.query,
+      });
+      if (!foundUsers) return res.status(status).json({ msg, status });
+      return res
+        .status(200)
+        .json({ users: foundUsers, status, count: foundUsers.length });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async getCustomers(
@@ -98,49 +123,54 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { agentCode, approved, paid, delivered, page, limit, name } =
-      req.query;
-    const filter: CustomersFilter = {
-      approved,
-      paid,
-      delivered,
-      agentCode,
-    };
-    console.log(filter);
-    Object.keys(filter).forEach((key) => {
-      if (!filter[key] && filter[key] !== false && filter[key] !== 0) {
-        delete filter[key];
+    try {
+      const { agentCode, approved, paid, delivered, page, limit, name } =
+        req.query;
+      const filter: CustomersFilter = {
+        approved,
+        paid,
+        delivered,
+        agentCode,
+      };
+      console.log(filter);
+      Object.keys(filter).forEach((key) => {
+        if (!filter[key] && filter[key] !== false && filter[key] !== 0) {
+          delete filter[key];
+        }
+      });
+      console.log(filter);
+      let msg, status, foundUsers;
+      if (Object.keys(filter).length === 0) {
+        const data = await UserService.getAllCustomers(
+          "CUSTOMER",
+          { page: page || 0, limit: limit || 10 },
+          name
+        );
+        msg = data.msg;
+        status = data.status;
+        foundUsers = data.foundUsers;
+        if (!foundUsers) return res.status(status).json({ msg, status });
+      } else {
+        console.log(name);
+        const data = await UserService.getCustomers(
+          "CUSTOMER",
+          { page: page || 0, limit: limit || 10 },
+          filter,
+          name
+        );
+        msg = data.msg;
+        status = data.status;
+        foundUsers = data.foundUsers;
+        if (!foundUsers) return res.status(status).json({ msg, status });
       }
-    });
-    console.log(filter);
-    let msg, status, foundUsers;
-    if (Object.keys(filter).length === 0) {
-      const data = await UserService.getAllCustomers(
-        "CUSTOMER",
-        { page: page || 0, limit: limit || 10 },
-        name
-      );
-      msg = data.msg;
-      status = data.status;
-      foundUsers = data.foundUsers;
-      if (!foundUsers) return res.status(status).json({ msg, status });
-    } else {
-      console.log(name);
-      const data = await UserService.getCustomers(
-        "CUSTOMER",
-        { page: page || 0, limit: limit || 10 },
-        filter,
-        name
-      );
-      msg = data.msg;
-      status = data.status;
-      foundUsers = data.foundUsers;
-      if (!foundUsers) return res.status(status).json({ msg, status });
-    }
 
-    return res
-      .status(200)
-      .json({ users: foundUsers, status, count: foundUsers.length });
+      return res
+        .status(200)
+        .json({ users: foundUsers, status, count: foundUsers.length });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async login(
@@ -148,23 +178,28 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { msg, status, access_token } = await AuthService.login(req.body);
-    if (status !== 200) {
-      return res.status(status).json({ msg, status });
+    try {
+      const { msg, status, access_token } = await AuthService.login(req.body);
+      if (status !== 200) {
+        return res.status(status).json({ msg, status });
+      }
+      const cookieOptions: CookieOptions = {
+        maxAge: 4 * 60 * 60 * 1000,
+      };
+      if (process.env.NODE_ENV === "production") {
+        cookieOptions.secure = true;
+        cookieOptions.sameSite = "none";
+      } else {
+        cookieOptions.sameSite = false;
+      }
+      return res
+        .status(status)
+        .cookie("bellyfood", access_token, cookieOptions)
+        .json({ access_token, msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
     }
-    const cookieOptions: CookieOptions = {
-      maxAge: 4 * 60 * 60 * 1000,
-    };
-    if (process.env.NODE_ENV === "production") {
-      cookieOptions.secure = true;
-      cookieOptions.sameSite = "none";
-    } else {
-      cookieOptions.sameSite = false;
-    }
-    return res
-      .status(status)
-      .cookie("bellyfood", access_token, cookieOptions)
-      .json({ access_token, msg, status });
   }
 
   static async logout(req: Request, res: Response, next: NextFunction) {
@@ -178,15 +213,20 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { msg, status, newCustomer } = await UserService.createCustomer(
-      req.body
-    );
-    if (status !== 201) {
-      return res.status(status).json({ msg });
+    try {
+      const { msg, status, newCustomer } = await UserService.createCustomer(
+        req.body
+      );
+      if (status !== 201) {
+        return res.status(status).json({ msg });
+      }
+      if (!newCustomer) return res.status(status).json({ msg, status });
+      const { password, ...others } = newCustomer.toObject();
+      return res.status(status).json({ msg, newCustomer: others, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
     }
-    if (!newCustomer) return res.status(status).json({ msg, status });
-    const { password, ...others } = newCustomer.toObject();
-    return res.status(status).json({ msg, newCustomer: others, status });
   }
 
   static async createAdmin(
@@ -194,13 +234,18 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { msg, status, newAdmin } = await UserService.createAdmin(req.body);
-    if (status !== 201) {
-      return res.status(status).json({ msg, status });
+    try {
+      const { msg, status, newAdmin } = await UserService.createAdmin(req.body);
+      if (status !== 201) {
+        return res.status(status).json({ msg, status });
+      }
+      if (!newAdmin) return res.status(status).json({ msg, status });
+      const { password, ...others } = newAdmin.toObject();
+      return res.status(status).json({ msg, newAdmin: others, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
     }
-    if (!newAdmin) return res.status(status).json({ msg, status });
-    const { password, ...others } = newAdmin.toObject();
-    return res.status(status).json({ msg, newAdmin: others, status });
   }
 
   static async approveCustomer(
@@ -208,12 +253,17 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { status, msg } = await UserService.approveCustomer(
-      req.query.customerId,
-      req.query.agentCode
-    );
-    if (status !== 200) return res.status(status).json({ msg, status });
-    return res.status(status).json({ msg, status });
+    try {
+      const { status, msg } = await UserService.approveCustomer(
+        req.query.customerId,
+        req.query.agentCode
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async deliverToUser(
@@ -221,11 +271,16 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const { msg, status } = await UserService.deliverToCustomer(
-      req.query.customerId
-    );
-    if (status !== 200) return res.status(status).json({ msg, status });
-    return res.status(status).json({ msg, status });
+    try {
+      const { msg, status } = await UserService.deliverToCustomer(
+        req.query.customerId
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async renewPackage(
@@ -233,18 +288,23 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    if (!req.user)
-      return res.status(404).json({ msg: "Not found", status: 404 });
-    if (!req.query.customerId)
-      return res
-        .status(405)
-        .json({ msg: "Customer id required for admin user", status: 405 });
-    const { status, msg } = await UserService.renewPackage(
-      req.query.customerId,
-      req.query.packageName as PackageName
-    );
-    if (status !== 200) return res.status(status).json({ msg, status });
-    return res.status(status).json({ msg, status });
+    try {
+      if (!req.user)
+        return res.status(404).json({ msg: "Not found", status: 404 });
+      if (!req.query.customerId)
+        return res
+          .status(405)
+          .json({ msg: "Customer id required for admin user", status: 405 });
+      const { status, msg } = await UserService.renewPackage(
+        req.query.customerId,
+        req.query.packageName as PackageName
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async changePackage(
@@ -257,17 +317,22 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    if (!req.query.customerId)
-      return res
-        .status(405)
-        .json({ msg: "Customer id required for admin user", status: 405 });
-    const { status, msg } = await UserService.changePackage(
-      req.query.customerId,
-      req.query.newPkg,
-      req.query.oldPkg
-    );
-    if (status !== 200) return res.status(status).json({ msg, status });
-    return res.status(status).json({ msg, status });
+    try {
+      if (!req.query.customerId)
+        return res
+          .status(405)
+          .json({ msg: "Customer id required for admin user", status: 405 });
+      const { status, msg } = await UserService.changePackage(
+        req.query.customerId,
+        req.query.newPkg,
+        req.query.oldPkg
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async deleteCustomer(
@@ -275,28 +340,33 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    if (!req.user)
-      return res.status(404).json({ msg: "Not found", status: 404 });
-    let status: number, msg: string;
-    if (!req.user.roles.includes("ADMIN")) {
-      const { status: s, msg: m } = await UserService.deleteCustomer(
-        req.user._id
-      );
-      status = s;
-      msg = m;
-    } else {
-      if (!req.query.customerId)
-        return res
-          .status(405)
-          .json({ msg: "Customer id required for admin user", status: 405 });
-      const { status: s, msg: m } = await UserService.deleteCustomer(
-        req.query.customerId
-      );
-      status = s;
-      msg = m;
+    try {
+      if (!req.user)
+        return res.status(404).json({ msg: "Not found", status: 404 });
+      let status: number, msg: string;
+      if (!req.user.roles.includes("ADMIN")) {
+        const { status: s, msg: m } = await UserService.deleteCustomer(
+          req.user._id
+        );
+        status = s;
+        msg = m;
+      } else {
+        if (!req.query.customerId)
+          return res
+            .status(405)
+            .json({ msg: "Customer id required for admin user", status: 405 });
+        const { status: s, msg: m } = await UserService.deleteCustomer(
+          req.query.customerId
+        );
+        status = s;
+        msg = m;
+      }
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
     }
-    if (status !== 200) return res.status(status).json({ msg, status });
-    return res.status(status).json({ msg, status });
   }
 
   static async getPaymentDetails(
@@ -304,13 +374,18 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    if (!req.user)
-      return res.status(404).json({ msg: "Not found", status: 404 });
-    const { status, msg, payments } = await UserService.getPayments(
-      req.user._id
-    );
-    if (status !== 200) return res.status(status).json({ msg, status });
-    return res.status(status).json({ payments, msg, status });
+    try {
+      if (!req.user)
+        return res.status(404).json({ msg: "Not found", status: 404 });
+      const { status, msg, payments } = await UserService.getPayments(
+        req.user._id
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ payments, msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async getDailyHistoryByCode(
@@ -318,20 +393,25 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const date = new Date(req.query.day);
-    console.log(date);
+    try {
+      const date = new Date(req.query.day);
+      console.log(date);
 
-    console.log(date.getTime());
-    const { agentCode } = req.query;
+      console.log(date.getTime());
+      const { agentCode } = req.query;
 
-    const { data, status, msg } =
-      await HistoryService.getDailyHistoryByAgentCode(
-        date.getTime(),
-        parseInt(agentCode)
-      );
-    if (status !== 200) return res.status(status).json({ msg, status });
+      const { data, status, msg } =
+        await HistoryService.getDailyHistoryByAgentCode(
+          date.getTime(),
+          parseInt(agentCode)
+        );
+      if (status !== 200) return res.status(status).json({ msg, status });
 
-    return res.status(status).json({ msg, data, status });
+      return res.status(status).json({ msg, data, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async getHistoryByDay(
@@ -339,31 +419,36 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const date = new Date(req.query.day);
-    console.log(date);
+    try {
+      const date = new Date(req.query.day);
+      console.log(date);
 
-    console.log(date.getTime());
+      console.log(date.getTime());
 
-    const {
-      agentWork,
-      numNewCustomer,
-      numNewPayment,
-      numNewDelivery,
-      totalAmount,
-      histories,
-      status,
-      msg,
-    } = await HistoryService.generateDailyReport(date.getTime());
-    if (status !== 200) return res.status(status).json({ msg, status });
-    const data = {
-      agentWork,
-      numNewCustomer,
-      numNewPayment,
-      numNewDelivery,
-      totalAmount,
-      histories,
-    };
-    return res.status(status).json({ msg, data, status });
+      const {
+        agentWork,
+        numNewCustomer,
+        numNewPayment,
+        numNewDelivery,
+        totalAmount,
+        histories,
+        status,
+        msg,
+      } = await HistoryService.generateDailyReport(date.getTime());
+      if (status !== 200) return res.status(status).json({ msg, status });
+      const data = {
+        agentWork,
+        numNewCustomer,
+        numNewPayment,
+        numNewDelivery,
+        totalAmount,
+        histories,
+      };
+      return res.status(status).json({ msg, data, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async generateMonthlyReport(
@@ -371,22 +456,33 @@ class UserController {
     res: Response,
     next: NextFunction
   ) {
-    const date = new Date();
+    try {
+      const date = new Date();
 
-    const { agentWork, numNewCustomer, numNewPayment, histories, status, msg } =
-      await HistoryService.generateMonthlyReport(
+      const {
+        agentWork,
+        numNewCustomer,
+        numNewPayment,
+        histories,
+        status,
+        msg,
+      } = await HistoryService.generateMonthlyReport(
         date.getMonth() + 1,
         date.getFullYear()
       );
 
-    if (status !== 200) return res.status(status).json({ msg, status });
-    const data = {
-      agentWork,
-      numNewCustomer,
-      numNewPayment,
-      histories,
-    };
-    return res.status(status).json({ msg, data, status });
+      if (status !== 200) return res.status(status).json({ msg, status });
+      const data = {
+        agentWork,
+        numNewCustomer,
+        numNewPayment,
+        histories,
+      };
+      return res.status(status).json({ msg, data, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 }
 

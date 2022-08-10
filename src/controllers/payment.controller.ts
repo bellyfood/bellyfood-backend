@@ -8,11 +8,16 @@ class PaymentController {
     res: Response,
     next: NextFunction
   ) {
-    const { status, msg, newPayment } = await PaymentService.addPayment(
-      req.body
-    );
-    if (status !== 201) return res.status(status).json({ msg, status });
-    return res.status(status).json({ msg, newPayment, status });
+    try {
+      const { status, msg, newPayment } = await PaymentService.addPayment(
+        req.body
+      );
+      if (status !== 201) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, newPayment, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 }
 

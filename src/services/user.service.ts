@@ -43,6 +43,7 @@ class UserService {
 
   static async searchByName(name: string) {
     try {
+      if (!name) return { msg: "Name is required", status: 405 };
       const foundUsers = await UserModel.find({
         $text: { $search: name },
       }).exec();
