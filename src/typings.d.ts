@@ -24,6 +24,10 @@ export class Pagination {
   page?: number = 0;
 }
 
+export class AdminFilter extends Pagination {
+  name?: string;
+}
+
 export class UsersFilter extends Pagination {
   [key: string]: any;
   approved?: boolean;

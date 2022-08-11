@@ -1,6 +1,7 @@
 import * as argon from "argon2";
 import UserModel from "../models/user.model";
 import {
+  AdminFilter,
   CreateAdmin,
   CreateCustomer,
   CustomersFilter,
@@ -55,21 +56,27 @@ class UserService {
     }
   }
 
-  static async getAdmins(pagination?: Pagination) {
+  static async getAdmins(filter: AdminFilter) {
     try {
-      if (!pagination)
-        return {
-          msg: "Admins found",
-          status: 200,
-          foundUsers: await UserModel.find({ roles: ["ADMIN"] }),
-        };
-      const page = pagination.page || 0;
-      const limit = pagination.limit || 10;
-      const foundUsers = await UserModel.find(
-        { roles: ["ADMIN"] },
-        {},
-        { skip: page * limit, limit: limit }
-      ).select("-password");
+      const page = filter.page || 0;
+      const limit = filter.limit || 10;
+      const name = filter.name;
+      let foundUsers;
+      if (!name) {
+        console.log("name");
+        foundUsers = await UserModel.find(
+          { roles: ["ADMIN"] },
+          {},
+          { skip: page * limit, limit: limit }
+        ).select("-password");
+      } else {
+        console.log(name);
+        foundUsers = await UserModel.find(
+          { $text: { $search: name }, roles: ["ADMIN"] },
+          {},
+          { skip: page * limit, limit: limit }
+        ).select("-password");
+      }
       return { msg: "Admins found", status: 200, foundUsers };
     } catch (err) {
       console.log(err);

@@ -9,7 +9,13 @@ userRouter.route("/get").get(Auth.isAdmin, UserController.getUser);
 
 userRouter.route("/customers").get(Auth.isAdmin, UserController.getCustomers);
 
+userRouter.route("/locations").get(UserController.getLocations);
+
+userRouter.route("/packages").get(UserController.getPackages);
+
 userRouter.route("/search").get(Auth.isAdmin, UserController.searchByName);
+
+userRouter.route("/delivery/history").get(UserController.getDeliveryHistory);
 
 userRouter
   .route("/history")

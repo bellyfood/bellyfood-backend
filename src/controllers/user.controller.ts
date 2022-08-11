@@ -4,6 +4,7 @@ import AuthService from "../services/auth.service";
 import HistoryService from "../services/history.service";
 import UserService from "../services/user.service";
 import {
+  AdminFilter,
   AuthDto,
   CreateAdmin,
   CreateCustomer,
@@ -102,7 +103,7 @@ class UserController {
   }
 
   static async getAdmins(
-    req: Request<{}, {}, {}, Pagination>,
+    req: Request<{}, {}, {}, AdminFilter>,
     res: Response,
     next: NextFunction
   ) {
@@ -278,23 +279,47 @@ class UserController {
     }
   }
 
+  static async getLocations(req: Request, res: Response, next: NextFunction) {
+    try {
+      const locations = await UserModel.find().distinct("location");
+      if (!locations)
+        return res.status(404).json({ msg: "Not found", status: 404 });
+      return res
+        .status(200)
+        .json({ locations, msg: "Locations found", status: 200 });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async getPackages(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { packages, msg, status } = await UserService.getPackages();
+      if (!packages)
+        return res.status(404).json({ msg: "Not found", status: 404 });
+      return res.status(status).json({ packages, msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
   static async getDeliveryHistory(
-    req: Request<{}, {}, {}, { customerId?: string }>,
+    req: Request<{}, {}, {}, {}>,
     res: Response,
     next: NextFunction
   ) {
     try {
       const { msg, status, histories } =
-        await HistoryService.getDeliveryHistory(req.query.customerId);
+        await HistoryService.getDeliveryHistory(req.user?._id);
       if (status !== 200) return res.status(status).json({ msg, status });
-      return res
-        .status(status)
-        .json({
-          msg,
-          status,
-          histories,
-          count: histories ? histories.length : 0,
-        });
+      return res.status(status).json({
+        msg,
+        status,
+        histories,
+        count: histories ? histories.length : 0,
+      });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });

@@ -157,7 +157,7 @@ class HistoryService {
         day
       );
       if (status !== 200) return { status, msg };
-      const { foundUsers } = await UserService.getAdmins();
+      const { foundUsers } = await UserService.getAdmins({});
       if (!foundUsers) return { msg: "Not found", status: 404 };
       const {
         agentWork,
@@ -336,7 +336,7 @@ class HistoryService {
       year
     );
     if (status !== 200) return { status, msg };
-    const { foundUsers } = await UserService.getAdmins();
+    const { foundUsers } = await UserService.getAdmins({});
     if (!foundUsers) return { msg: "Not found", status: 404 };
     const {
       agentWork,
