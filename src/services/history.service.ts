@@ -69,6 +69,26 @@ class HistoryService {
     }
   }
 
+  static async getDeliveryHistory(customerId?: string) {
+    try {
+      let histories;
+      if (!customerId) {
+        histories = await HistoryModel.find({
+          type: "delivery",
+        });
+      } else {
+        histories = await HistoryModel.find({
+          type: "delivery",
+          customerId,
+        });
+      }
+      return { msg: "Histories found", status: 200, histories };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
   static async generateReportByAgentCode(histories: any, agentCode: number) {
     let dup = histories.filter(
       (history: any) => history.agentCode == agentCode

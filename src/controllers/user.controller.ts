@@ -278,6 +278,29 @@ class UserController {
     }
   }
 
+  static async getDeliveryHistory(
+    req: Request<{}, {}, {}, { customerId?: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { msg, status, histories } =
+        await HistoryService.getDeliveryHistory(req.query.customerId);
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res
+        .status(status)
+        .json({
+          msg,
+          status,
+          histories,
+          count: histories ? histories.length : 0,
+        });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
   static async deliverToUser(
     req: Request<{}, {}, {}, { customerId: string }>,
     res: Response,
