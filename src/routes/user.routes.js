@@ -9,6 +9,8 @@ userRouter.route("/get").get(Auth.isAdmin, UserController.getUser);
 
 userRouter.route("/customers").get(Auth.isAdmin, UserController.getCustomers);
 
+userRouter.route("/locations").post(UserController.addLocation);
+
 userRouter.route("/locations").get(UserController.getLocations);
 
 userRouter.route("/packages").get(UserController.getPackages);

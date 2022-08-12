@@ -19,15 +19,17 @@ class PaymentService {
         amount,
         agentCode: foundUser.agentCode || 12345,
       });
+      if (foundUser.amountPaid + amount > foundUser.totalPrice)
+        return { msg: "Amount will pass the total price", status: 405 };
       foundUser.amountPaid += amount;
-      if (foundUser.amountPaid == foundUser.totalPrice) {
+      if (foundUser.amountPaid >= foundUser.totalPrice) {
         foundUser.paid = true;
       }
       foundUser.lastPayment = new Date();
       await foundUser.save();
       const { status: status2, msg: msg2 } =
         await HistoryService.addPaymentToHistory(newPayment._id.toString());
-      if (status2 !== 201) return { msg2, status: status2 };
+      if (status2 !== 201) return { msg: msg2, status: status2 };
       return { msg: "Payment added successfully", status: 201, newPayment };
     } catch (err) {
       console.log(err);

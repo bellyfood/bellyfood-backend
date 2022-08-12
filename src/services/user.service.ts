@@ -12,6 +12,7 @@ import HistoryService from "./history.service";
 import PaymentModel from "../models/payment.model";
 import PackageModel from "../models/package.model";
 import Utils from "../utils";
+import LocationModel from "../models/location.model";
 
 class UserService {
   static async getUserWithRole(customerId: string, role: string) {
@@ -169,11 +170,16 @@ class UserService {
   }: CreateCustomer) {
     try {
       const packageName = packageNames[0];
+      console.log(packageName);
       const {
         status: status2,
         msg: msg2,
         price,
       } = await UserService.getPackagePrice(packageName);
+      const foundLocation = await LocationModel.findOne({ location });
+      if (!foundLocation) {
+        return { msg: "Location not available", status: 405 };
+      }
       if (status2 !== 200) return { msg: msg2, status: status2 };
       const newCustomer = await UserModel.create({
         phone,

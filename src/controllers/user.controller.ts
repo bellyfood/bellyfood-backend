@@ -15,6 +15,7 @@ import {
 } from "../typings";
 import UserModel from "../models/user.model";
 import Utils from "../utils";
+import LocationModel from "../models/location.model";
 
 class UserController {
   static async me(req: Request, res: Response, next: NextFunction) {
@@ -127,13 +128,22 @@ class UserController {
     next: NextFunction
   ) {
     try {
-      const { agentCode, approved, paid, delivered, page, limit, name } =
-        req.query;
+      const {
+        agentCode,
+        approved,
+        paid,
+        delivered,
+        page,
+        limit,
+        name,
+        location,
+      } = req.query;
       const filter: CustomersFilter = {
         approved,
         paid,
         delivered,
         agentCode,
+        location,
       };
       console.log(filter);
       Object.keys(filter).forEach((key) => {
@@ -279,9 +289,30 @@ class UserController {
     }
   }
 
+  static async addLocation(
+    req: Request<{}, {}, { location: string }, {}>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { location } = req.body;
+      const newLocation = await LocationModel.create({
+        location,
+      });
+      return res
+        .status(201)
+        .json({ msg: "New location added", status: 200, newLocation });
+    } catch (err: any) {
+      console.log(err);
+      if (err.code == 11000)
+        return { msg: "Duplicate phone number not allowed", status: 405 };
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
   static async getLocations(req: Request, res: Response, next: NextFunction) {
     try {
-      const locations = await UserModel.find().distinct("location");
+      const locations = await LocationModel.find().distinct("location");
       if (!locations)
         return res.status(404).json({ msg: "Not found", status: 404 });
       return res
