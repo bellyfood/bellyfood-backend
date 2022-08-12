@@ -40,9 +40,9 @@ class UserController {
 
       return res
         .status(200)
-        .json({ user: others, status, msg: req.headers.cookie });
+        .json({ user: others, status, msg: "Returned user successfully" });
     } catch (err) {
-      console.log(err);
+      console.log(err)
       return res.status(500).json({ msg: "An error occurred", status: 500 });
     }
   }
