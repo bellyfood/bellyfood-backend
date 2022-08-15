@@ -93,6 +93,7 @@ class UserService {
   ) {
     try {
       let foundUsers;
+
       const page = pagination.page || 0;
       const limit = pagination.limit || 10;
       const count = await UserModel.find({
