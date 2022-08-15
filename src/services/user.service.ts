@@ -62,6 +62,7 @@ class UserService {
       const page = filter.page || 0;
       const limit = filter.limit || 10;
       const name = filter.name;
+      const count = await UserModel.find({ roles: ["ADMIN"] }).count();
       let foundUsers;
       if (!name) {
         console.log("name");
@@ -78,7 +79,7 @@ class UserService {
           { skip: page * limit, limit: limit }
         ).select("-password");
       }
-      return { msg: "Admins found", status: 200, foundUsers };
+      return { msg: "Admins found", status: 200, foundUsers, count };
     } catch (err) {
       console.log(err);
       return { msg: "An error occurred", status: 500 };
@@ -94,6 +95,9 @@ class UserService {
       let foundUsers;
       const page = pagination.page || 0;
       const limit = pagination.limit || 10;
+      const count = await UserModel.find({
+        roles: role,
+      }).count();
       if (!name) {
         foundUsers = await UserModel.find(
           {
@@ -112,7 +116,7 @@ class UserService {
           { skip: page * limit, limit: limit }
         ).select("-password");
       }
-      return { msg: "Users found", status: 200, foundUsers };
+      return { msg: "Users found", status: 200, foundUsers, count };
     } catch (err) {
       console.log(err);
       return { msg: "An error occurred", status: 500 };
@@ -129,6 +133,10 @@ class UserService {
       let foundUsers;
       const page = pagination.page || 0;
       const limit = pagination.limit || 10;
+      const count = await UserModel.find({
+        ...filter,
+        roles: role,
+      }).count();
 
       if (!name) {
         foundUsers = await UserModel.find(
@@ -150,7 +158,7 @@ class UserService {
           { skip: page * limit, limit: limit }
         ).select("-password");
       }
-      return { msg: "Users found", status: 200, foundUsers };
+      return { msg: "Users found", status: 200, foundUsers, count };
     } catch (err) {
       console.log(err);
       return { msg: "An error occurred", status: 500 };

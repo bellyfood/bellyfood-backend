@@ -16,6 +16,7 @@ import {
 import UserModel from "../models/user.model";
 import Utils from "../utils";
 import LocationModel from "../models/location.model";
+import { database } from "agenda/dist/agenda/database";
 
 class UserController {
   static async me(req: Request, res: Response, next: NextFunction) {
@@ -42,7 +43,7 @@ class UserController {
         .status(200)
         .json({ user: others, status, msg: "Returned user successfully" });
     } catch (err) {
-      console.log(err)
+      console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });
     }
   }
@@ -109,13 +110,11 @@ class UserController {
     next: NextFunction
   ) {
     try {
-      const { msg, status, foundUsers } = await UserService.getAdmins({
+      const { msg, status, foundUsers, count } = await UserService.getAdmins({
         ...req.query,
       });
       if (!foundUsers) return res.status(status).json({ msg, status });
-      return res
-        .status(200)
-        .json({ users: foundUsers, status, count: foundUsers.length });
+      return res.status(200).json({ users: foundUsers, status, count });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });
@@ -152,7 +151,7 @@ class UserController {
         }
       });
       console.log(filter);
-      let msg, status, foundUsers;
+      let msg, status, foundUsers, count;
       if (Object.keys(filter).length === 0) {
         const data = await UserService.getAllCustomers(
           "CUSTOMER",
@@ -162,6 +161,7 @@ class UserController {
         msg = data.msg;
         status = data.status;
         foundUsers = data.foundUsers;
+        count = data.count;
         if (!foundUsers) return res.status(status).json({ msg, status });
       } else {
         console.log(name);
@@ -174,12 +174,11 @@ class UserController {
         msg = data.msg;
         status = data.status;
         foundUsers = data.foundUsers;
+        count = data.count;
         if (!foundUsers) return res.status(status).json({ msg, status });
       }
 
-      return res
-        .status(200)
-        .json({ users: foundUsers, status, count: foundUsers.length });
+      return res.status(200).json({ users: foundUsers, status, count });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });
