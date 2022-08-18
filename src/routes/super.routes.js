@@ -11,7 +11,10 @@ superRouter
   .route("/admin")
   .get(Auth.isSuperAdmin, UserController.getAdminByCode);
 
-superRouter.route("/admins").get(Auth.isSuperAdmin, UserController.getAdmins);
+superRouter
+  .route("/admins")
+  .get(Auth.isSuperAdmin, UserController.getAdmins)
+  .delete(Auth.isSuperAdmin, UserController.deleteAdmin);
 
 superRouter
   .route("/deliver")

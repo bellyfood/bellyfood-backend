@@ -9,9 +9,12 @@ userRouter.route("/get").get(Auth.isAdmin, UserController.getUser);
 
 userRouter.route("/customers").get(Auth.isAdmin, UserController.getCustomers);
 
-userRouter.route("/locations").post(UserController.addLocation);
-
-userRouter.route("/locations").get(UserController.getLocations);
+userRouter
+  .route("/locations")
+  .post(UserController.addLocation)
+  .get(UserController.getLocations)
+  .put(UserController.editLocation)
+  .delete(UserController.deleteLocation);
 
 userRouter.route("/packages").get(UserController.getPackages);
 
@@ -27,10 +30,10 @@ userRouter.route("/approve").post(Auth.isAdmin, UserController.approveCustomer);
 
 userRouter.route("/payments").get(UserController.getPaymentDetails);
 
-userRouter.route("/renew").get(UserController.renewPackage);
+userRouter.route("/renew").post(UserController.renewPackage);
 
-userRouter.route("/change").get(UserController.changePackage);
+userRouter.route("/change").post(UserController.changePackage);
 
-userRouter.route("/delete").get(UserController.deleteCustomer);
+userRouter.route("/delete").delete(UserController.deleteCustomer);
 
 export default userRouter;

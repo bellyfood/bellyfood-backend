@@ -104,6 +104,23 @@ class UserController {
     }
   }
 
+  static async deleteAdmin(
+    req: Request<{}, {}, {}, { agentCode: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { msg, status, deletedAdmin } = await UserService.deleteAdmin(
+        req.query.agentCode
+      );
+      if (status !== 200) return { msg, status };
+      return { msg, status, deletedAdmin };
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
   static async getAdmins(
     req: Request<{}, {}, {}, AdminFilter>,
     res: Response,
@@ -317,6 +334,45 @@ class UserController {
       return res
         .status(200)
         .json({ locations, msg: "Locations found", status: 200 });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async editLocation(
+    req: Request<{}, {}, {}, { oldLoc: string; newLoc: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const updatedLoc = await LocationModel.updateOne(
+        { location: req.query.oldLoc },
+        {
+          $set: {
+            location: req.query.newLoc,
+          },
+        }
+      );
+      return res.status(200).json({ updatedLoc, msg: "Updated", status: 200 });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async deleteLocation(
+    req: Request<{}, {}, {}, { location: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const deletedLocation = await LocationModel.deleteOne({
+        location: req.query.location,
+      });
+      return res
+        .status(200)
+        .json({ deletedLocation, msg: "Updated", status: 200 });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });

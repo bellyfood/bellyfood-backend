@@ -57,6 +57,19 @@ class UserService {
     }
   }
 
+  static async deleteAdmin(agentCode: any) {
+    try {
+      const deletedAdmin = await UserModel.deleteOne({
+        agentCode,
+        roles: ["ADMIN"],
+      });
+      return { msg: "Admin deleted", status: 200, deletedAdmin };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
   static async getAdmins(filter: AdminFilter) {
     try {
       const page = filter.page || 0;
@@ -333,6 +346,8 @@ class UserService {
         };
       }
       foundUser.amountPaid = 0;
+      foundUser.paid = false;
+      foundUser.delivered = false;
       await foundUser.save();
       return {
         msg: "Renewed package",
@@ -367,6 +382,8 @@ class UserService {
       if (status2 !== 200) return { msg: msg2, status: status2 };
       foundUser.packageNames.splice(index, 1, newPkgName);
       foundUser.totalPrice = foundUser.totalPrice - oldPrice! + price!;
+      foundUser.paid = false;
+      foundUser.delivered = false;
       await foundUser.save();
       return {
         msg: "Changed package",
