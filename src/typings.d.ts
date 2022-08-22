@@ -33,9 +33,10 @@ export class UsersFilter extends Pagination {
   approved?: boolean;
   paid?: boolean;
   delivered?: boolean;
-  agentCode?: number;
+  agentCode?: string;
   name?: string;
   location?: string;
+  inactive?: string;
 }
 
 export class CustomersFilter extends UsersFilter {}

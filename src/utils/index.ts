@@ -1,6 +1,12 @@
+import "dotenv/config";
 import Agenda, { Job } from "agenda";
 import Config from "../config/db.config";
 import otpGenerator from "otp-generator";
+import twilio from "twilio";
+const accountSid = process.env.TWILIO_ACCOUNT_SID!;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE!;
+const client = twilio(accountSid, authToken);
 
 class Utils {
   static createAgenda() {
@@ -14,6 +20,17 @@ class Utils {
       upperCaseAlphabets: false,
       specialChars: false,
     });
+  }
+
+  static async sendSMS({ to, body }: { to: string; body: string }) {
+    client.messages
+      .create({
+        messagingServiceSid,
+        to,
+        body,
+      })
+      .then((message) => console.log(message.sid))
+      .catch((err) => console.error(err));
   }
 
   static log(agenda: Agenda) {

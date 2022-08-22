@@ -17,6 +17,11 @@ import UserModel from "../models/user.model";
 import Utils from "../utils";
 import LocationModel from "../models/location.model";
 import { database } from "agenda/dist/agenda/database";
+import TimeAgo from "javascript-time-ago";
+import en from "javascript-time-ago/locale/en";
+
+TimeAgo.addLocale(en);
+const timeAgo = new TimeAgo("en-US");
 
 class UserController {
   static async me(req: Request, res: Response, next: NextFunction) {
@@ -153,6 +158,7 @@ class UserController {
         limit,
         name,
         location,
+        inactive,
       } = req.query;
       const filter: CustomersFilter = {
         approved,
@@ -161,14 +167,16 @@ class UserController {
         agentCode,
         location,
       };
-      console.log(filter);
       Object.keys(filter).forEach((key) => {
         if (!filter[key] && filter[key] !== false && filter[key] !== 0) {
           delete filter[key];
         }
       });
-      console.log(filter);
-      let msg, status, foundUsers, count;
+      let msg,
+        status,
+        foundUsers: any[] = [],
+        count;
+
       if (Object.keys(filter).length === 0) {
         const data = await UserService.getAllCustomers(
           "CUSTOMER",
@@ -177,11 +185,25 @@ class UserController {
         );
         msg = data.msg;
         status = data.status;
-        foundUsers = data.foundUsers;
+        if (inactive) {
+          data.foundUsers?.forEach((user) => {
+            const ago = timeAgo
+              .format(
+                Date.now() - (Date.now() - new Date(user.date!).getTime())
+              )
+              .split(" ");
+            console.log(parseInt(ago[0]));
+            if (ago[1].includes("month") && parseInt(ago[0]) >= 1) {
+              console.log(ago);
+              foundUsers.push(user);
+            }
+          });
+        } else {
+          foundUsers = data.foundUsers!;
+        }
         count = data.count;
         if (!foundUsers) return res.status(status).json({ msg, status });
       } else {
-        console.log(name);
         const data = await UserService.getCustomers(
           "CUSTOMER",
           { page: page || 0, limit: limit || 10 },
@@ -190,8 +212,26 @@ class UserController {
         );
         msg = data.msg;
         status = data.status;
-        foundUsers = data.foundUsers;
+        console.log(inactive);
+
+        if (inactive) {
+          data.foundUsers?.forEach((user) => {
+            const ago = timeAgo
+              .format(
+                Date.now() - (Date.now() - new Date(user.date!).getTime())
+              )
+              .split(" ");
+            console.log(ago);
+            if (ago[1].includes("month") && parseInt(ago[0]) >= 1) {
+              console.log(ago);
+              foundUsers.push(user);
+            }
+          });
+        } else {
+          foundUsers = data.foundUsers!;
+        }
         count = data.count;
+
         if (!foundUsers) return res.status(status).json({ msg, status });
       }
 

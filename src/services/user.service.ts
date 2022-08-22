@@ -266,6 +266,10 @@ class UserService {
         customerId
       );
       if (status !== 201) return { msg: msg2, status };
+      const body = `Welcome to Bellyfood, ${foundUser.name}. We supply 
+      healthy food to you. View your payments on our website or whatsapp 
+      08053634000`;
+      // await Utils.sendSMS({ to: foundUser.phone, body });
       return { msg: "Approved customer", status: status };
     } catch (err) {
       console.log(err);
