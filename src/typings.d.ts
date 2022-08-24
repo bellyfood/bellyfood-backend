@@ -1,6 +1,7 @@
 export interface AuthDto {
   phone: string;
   password: string;
+  service: string;
   name?: string;
 }
 
@@ -49,7 +50,21 @@ export class CreateAdmin {
   roles: string[] = ["ADMIN"];
 }
 
+export class CreateBellysaveCustomer {
+  name: string;
+  gender: string;
+  agentCode: number;
+  phone: string;
+  password: string;
+  location: string;
+  approved: boolean;
+  agentName: string;
+  bankName: string;
+  accountNumber: string;
+}
+
 export class CreateCustomer {
+  agentName: string;
   name: string;
   gender: string;
   agentCode: number;
@@ -57,7 +72,7 @@ export class CreateCustomer {
   password: string;
   location: string;
   roles: string[] = ["CUSTOMER"];
-  approved: boolean = false;
+  approved: boolean;
   packageNames: PackageName[];
   priceModifier: number;
 }

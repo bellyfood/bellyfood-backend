@@ -1,8 +1,51 @@
+import BellysavePaymentModel from "../models/bellysave-payment.model";
 import HistoryModel from "../models/history.model";
 import PaymentService from "./payment.service";
 import UserService from "./user.service";
 
 class HistoryService {
+  static async addBellysaveCustomerToHistory(customerId: string) {
+    try {
+      const { foundCustomer, status, msg } =
+        await UserService.getBellysaveCustomer("_id", customerId);
+      if (!foundCustomer) return { msg, status };
+      const newHistory = await HistoryModel.create({
+        details: "New customer added",
+        type: "creation",
+        bellysave: customerId,
+        service: "bellysave",
+        location: foundCustomer.location,
+        date: Date.now(), // 2022-08-01T11:49:00
+        agentCode: foundCustomer.agentCode,
+      });
+      return { msg: "Added customer to history", status: 201, newHistory };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
+  static async addPaidCustomerToHistory(customerId: string) {
+    try {
+      const { foundCustomer, status, msg } =
+        await UserService.getBellysaveCustomer("_id", customerId);
+      if (!foundCustomer) return { msg, status };
+      const newHistory = await HistoryModel.create({
+        details: "Customer paid",
+        type: "completed",
+        bellysave: customerId,
+        amountPaid: foundCustomer.amountPaid - foundCustomer.amountRemoved,
+        service: "bellyfood",
+        location: foundCustomer.location,
+        date: Date.now(),
+        agentCode: foundCustomer.agentCode,
+      });
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
   static async addCustomerToHistory(customerId: string) {
     try {
       const { foundUser, status, msg } = await UserService.getUserWithRole(
@@ -15,10 +58,32 @@ class HistoryService {
         type: "creation",
         customerId,
         location: foundUser.location,
+        service: "bellyfood",
         date: Date.now(), // 2022-08-01T11:49:00
         agentCode: foundUser.agentCode,
       });
       return { msg: "Added customer to history", status: 201, newHistory };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
+  static async addBellysavePaymentToHistory(paymentId: string) {
+    try {
+      const foundPayment = await BellysavePaymentModel.findById(paymentId);
+      if (!foundPayment) return { msg: "Not found", status: 404 };
+      const newHistory = await HistoryModel.create({
+        details: "New payment added",
+        type: "payment",
+        bellysave: foundPayment.customerId,
+        location: foundPayment.location,
+        service: "bellysave",
+        date: Date.now(), // 2022-08-01T11:49:00
+        amountPaid: foundPayment.amount,
+        agentCode: foundPayment.agentCode,
+      });
+      return { msg: "Added payment to history", status: 201, newHistory };
     } catch (err) {
       console.log(err);
       return { msg: "An error occurred", status: 500 };
@@ -36,11 +101,12 @@ class HistoryService {
         type: "payment",
         customerId: foundPayment.customerId,
         location: foundPayment.location,
+        service: "bellyfood",
         date: Date.now(), // 2022-08-01T11:49:00
         amountPaid: foundPayment.amount,
         agentCode: foundPayment.agentCode,
       });
-      return { msg: "Added customer to history", status: 201, newHistory };
+      return { msg: "Added payment to history", status: 201, newHistory };
     } catch (err) {
       console.log(err);
       return { msg: "An error occurred", status: 500 };
@@ -58,11 +124,26 @@ class HistoryService {
         details: "New delivery added",
         type: "delivery",
         customerId: customerId,
+        service: "bellyfood",
         location: foundUser.location,
         date: Date.now(), // 2022-08-01T11:49:00
         agentCode: foundUser.agentCode,
       });
       return { msg: "Added customer to history", status: 201, newHistory };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
+  static async getPaymentCollectionHistory(customerId: string) {
+    try {
+      const histories = await HistoryModel.find({
+        customerId,
+        type: "completed",
+        service: "bellysave",
+      });
+      return { msg: "Histories found", status: 200, histories };
     } catch (err) {
       console.log(err);
       return { msg: "An error occurred", status: 500 };
@@ -75,11 +156,13 @@ class HistoryService {
       if (!customerId) {
         histories = await HistoryModel.find({
           type: "delivery",
+          service: "bellyfood",
         });
       } else {
         histories = await HistoryModel.find({
           type: "delivery",
           customerId,
+          service: "bellyfood",
         });
       }
       return { msg: "Histories found", status: 200, histories };
@@ -107,6 +190,7 @@ class HistoryService {
           break;
       }
     });
+
     return {
       histories: dup,
       numNewCustomer,
@@ -116,13 +200,18 @@ class HistoryService {
     };
   }
 
-  static async getDailyHistoryByAgentCode(day: number, agentCode: number) {
+  static async getDailyHistoryByAgentCode(
+    day: number,
+    agentCode: number,
+    service: string
+  ) {
     try {
       const histories = await HistoryModel.find({
         date: {
           $gt: day,
           $lt: day + 1 * 24 * 60 * 60 * 1000,
         },
+        service,
         agentCode,
       });
       const data = await HistoryService.generateReportByAgentCode(
@@ -136,13 +225,14 @@ class HistoryService {
     }
   }
 
-  static async getHistoryByDay(day: number) {
+  static async getHistoryByDay(day: number, service: string) {
     try {
       const histories = await HistoryModel.find({
         date: {
           $gt: day,
           $lt: day + 1 * 24 * 60 * 60 * 1000,
         },
+        service,
       });
       return { msg: "History found", status: 200, histories };
     } catch (err) {
@@ -151,10 +241,11 @@ class HistoryService {
     }
   }
 
-  static async generateDailyReport(day: number) {
+  static async generateDailyReport(day: number, service: string) {
     try {
       const { histories, msg, status } = await HistoryService.getHistoryByDay(
-        day
+        day,
+        service
       );
       if (status !== 200) return { status, msg };
       const { foundUsers } = await UserService.getAdmins({});
@@ -194,17 +285,13 @@ class HistoryService {
         nextMonth = "01";
         nextYear++;
       } else nextMonth = month + 1 < 10 ? "0" + (month + 1) : month + 1;
-      console.log(currMonth, nextMonth);
-      console.log(
-        new Date(`${year}-${currMonth}`),
-        new Date(`${nextYear}-${nextMonth}`)
-      );
 
       const histories = await HistoryModel.find({
         date: {
           $gt: new Date(`${year}-${currMonth}`),
           $lt: new Date(`${year}-${nextMonth}`),
         },
+        service: "bellyfood",
       });
       return { msg: "History found", status: 200, histories };
     } catch (err) {
@@ -244,10 +331,6 @@ class HistoryService {
         curr.type == "delivery" ? (total += 1) : (total += 0),
       0
     );
-    console.log(agentWorks);
-    console.log(totalAmount);
-    console.log(numNewCustomer);
-    console.log(numNewPayment);
     return {
       agentWork: agentWorks,
       numNewCustomer,
@@ -256,78 +339,6 @@ class HistoryService {
       totalAmount,
       histories,
     };
-    // let numNewCustomer = 0;
-    // let numNewPayment = 0;
-    // let numNewDelivery = 0;
-    // let totalAmount = 0;
-
-    // interface Agent {
-    //   numNewCustomer?: number;
-    //   numNewPayment?: number;
-    //   totalAmount?: number;
-    // }
-    // interface AgentReport {
-    //   [key: string]: Agent | undefined;
-    // }
-    // let agentWork: AgentReport = {};
-    // histories!.forEach((history: any) => {
-    //   const agentCode = history.agentCode!.toString();
-    //   switch (history.type) {
-    //     case "creation":
-    //       numNewCustomer++;
-    //       if (
-    //         agentWork[agentCode] &&
-    //         agentWork[agentCode]!.numNewCustomer! >= 1
-    //       ) {
-    //         agentWork[agentCode] = {
-    //           ...agentWork[agentCode],
-    //           numNewCustomer: agentWork[agentCode]!.numNewCustomer! + 1,
-    //         };
-    //       } else {
-    //         agentWork[agentCode] = {
-    //           ...agentWork[agentCode],
-    //           numNewCustomer: 1,
-    //         };
-    //       }
-    //       break;
-    //     case "payment":
-    //       numNewPayment++;
-    //       totalAmount += history.amountPaid!;
-    //       if (agentCode == history.agentCode!.toString()) {
-    //         agentWork[agentCode] = {
-    //           ...agentWork[agentCode],
-    //           totalAmount:
-    //             agentWork[agentCode]!.totalAmount! + history.amountPaid!,
-    //         };
-    //         if (
-    //           agentWork[agentCode] &&
-    //           agentWork[agentCode]!.numNewPayment! >= 1
-    //         ) {
-    //           agentWork[agentCode] = {
-    //             ...agentWork[agentCode],
-    //             numNewPayment: agentWork[agentCode]!.numNewPayment! + 1,
-    //           };
-    //         } else {
-    //           agentWork[agentCode] = {
-    //             ...agentWork[agentCode],
-    //             numNewPayment: 1,
-    //           };
-    //         }
-    //       }
-    //       break;
-    //     case "delivery":
-    //       numNewDelivery++;
-    //       break;
-    //   }
-    // });
-    // return {
-    //   agentWork,
-    //   numNewCustomer,
-    //   numNewPayment,
-    //   numNewDelivery,
-    //   totalAmount,
-    //   histories,
-    // };
   }
 
   static async generateMonthlyReport(month: number, year: number) {

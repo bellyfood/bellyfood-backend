@@ -2,6 +2,7 @@ import UserModel from "../models/user.model";
 import jwt from "jsonwebtoken";
 import * as argon from "argon2";
 import { AuthDto } from "../typings";
+import BellysaveCustomerModel from "../models/bellysave-customer.model";
 
 interface LoginFilter {
   phone: string;
@@ -9,18 +10,24 @@ interface LoginFilter {
 }
 
 class AuthService {
-  static async login({ phone, password, name }: AuthDto) {
+  static async login({ phone, password, name, service }: AuthDto) {
     const filter: LoginFilter = {
       phone,
     };
     name && (filter.name = name);
     try {
-      const foundUser = await UserModel.findOne(filter);
+      let foundUser;
+      if (service.toLowerCase() === "bellysave") {
+        foundUser = await BellysaveCustomerModel.findOne(filter);
+      }
+      if (!foundUser) {
+        foundUser = await UserModel.findOne(filter);
+      }
       if (!foundUser) return { msg: "Not found", status: 404 };
       const pswCorrect = await argon.verify(foundUser.password!, password);
       if (!pswCorrect) return { msg: "Credentials incorrect", status: 401 };
       if (!foundUser.approved)
-        return { msg: "Not approved yet! Please contact agent", status: 401 };
+        return { msg: "Not approved yet! Please contact agent", status: 405 };
       const { access_token } = await AuthService.signToken(
         foundUser._id.toString(),
         foundUser.phone!

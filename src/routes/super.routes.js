@@ -17,8 +17,24 @@ superRouter
   .delete(Auth.isSuperAdmin, UserController.deleteAdmin);
 
 superRouter
+  .route("/admin/disable")
+  .post(Auth.isSuperAdmin, UserController.disableAdmin);
+
+superRouter
+  .route("/admin/enable")
+  .post(Auth.isSuperAdmin, UserController.enableAdmin);
+
+superRouter
   .route("/deliver")
   .post(Auth.isSuperAdmin, UserController.deliverToUser);
+
+superRouter
+  .route("/payments")
+  .put(Auth.isSuperAdmin, UserController.editPayment);
+
+superRouter
+  .route("/customers")
+  .put(Auth.isSuperAdmin, UserController.editCustomer);
 
 superRouter
   .route("/history")

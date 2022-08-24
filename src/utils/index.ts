@@ -35,7 +35,6 @@ class Utils {
 
   static log(agenda: Agenda) {
     agenda.define("log", async (job: Job) => {
-      // const foundUsers = await UserService.getCustomers("ADMIN", {});
       console.log("foundUsers");
     });
     return agenda;

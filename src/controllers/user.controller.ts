@@ -7,6 +7,7 @@ import {
   AdminFilter,
   AuthDto,
   CreateAdmin,
+  CreateBellysaveCustomer,
   CreateCustomer,
   CustomersFilter,
   PackageName,
@@ -28,21 +29,24 @@ class UserController {
     try {
       if (!req.user)
         return res.status(404).json({ msg: "Not found", status: 404 });
-      // console.log(Config.connection);
-
-      // let agenda = Utils.createAgenda();
-      // const timeJob = Utils.time(agenda);
-      // await agenda.start();
-      // await timeJob.repeatEvery("10 seconds").save();
-
-      const { msg, status, foundUser } = await UserService.getUserWithRole(
-        req.user._id,
-        req.user.roles[0]
-      );
+      let msg, status, foundUser, data;
+      if (req.user.roles == undefined) {
+        data = await UserService.getBellysaveCustomer("_id", req.user._id);
+        msg = data.msg;
+        status = data.status;
+        foundUser = data.foundCustomer;
+      } else {
+        data = await UserService.getUserWithRole(
+          req.user._id,
+          req.user.roles[0]
+        );
+        status = data.status;
+        msg = data.msg;
+        foundUser = data.foundUser;
+      }
       if (!foundUser) return res.status(status).json({ msg, status });
-      // console.log(foundUser);
+
       const { password, ...others } = foundUser.toObject();
-      // console.log(others);
 
       return res
         .status(200)
@@ -59,11 +63,24 @@ class UserController {
     next: NextFunction
   ) {
     try {
-      const { msg, status, foundUser } = await UserService.getUserWithRole(
+      let foundUser, msg, status;
+      const data = await UserService.getUserWithRole(
         req.query.customerId,
         "CUSTOMER"
       );
-      if (!foundUser) return res.status(status).json({ msg, status });
+      foundUser = data.foundUser;
+
+      if (!foundUser) {
+        const data = await UserService.getBellysaveCustomer(
+          "_id",
+          req.query.customerId
+        );
+        foundUser = data.foundCustomer;
+      }
+      msg = data.msg;
+      status = data.status;
+      if (!foundUser)
+        return res.status(404).json({ msg: "Not found", status: 404 });
       const { password, ...others } = foundUser.toObject();
       return res.status(200).json({ user: others, status });
     } catch (err) {
@@ -83,6 +100,45 @@ class UserController {
       );
       if (!foundUsers) return res.status(status).json({ msg, status });
       return res.status(200).json({ users: foundUsers, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async disableAdmin(
+    req: Request<{}, {}, {}, { adminId: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { msg, status, foundUser } = await UserService.getUserWithRole(
+        req.query.adminId,
+        "ADMIN"
+      );
+      if (!foundUser) return res.status(status).json({ msg, status });
+      foundUser.approved = false;
+      await foundUser.save();
+      return res.status(status).json({ msg, status, user: foundUser });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async enableAdmin(
+    req: Request<{}, {}, {}, { adminId: string }>,
+    res: Response
+  ) {
+    try {
+      const { msg, status, foundUser } = await UserService.getUserWithRole(
+        req.query.adminId,
+        "ADMIN"
+      );
+      if (!foundUser) return res.status(status).json({ msg, status });
+      foundUser.approved = true;
+      await foundUser.save();
+      return res.status(status).json({ msg, status, user: foundUser });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });
@@ -119,7 +175,7 @@ class UserController {
         req.query.agentCode
       );
       if (status !== 200) return { msg, status };
-      return { msg, status, deletedAdmin };
+      return res.status(status).json({ msg, status, deletedAdmin });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });
@@ -137,6 +193,131 @@ class UserController {
       });
       if (!foundUsers) return res.status(status).json({ msg, status });
       return res.status(200).json({ users: foundUsers, status, count });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async getBellysaveCustomers(req: Request, res: Response) {
+    try {
+      const filter = { ...req.query };
+      Object.keys(filter).forEach((key) => {
+        if (
+          !filter[key] &&
+          !!filter[key] !== false &&
+          parseInt(filter[key]!.toString()) !== 0
+        ) {
+          delete filter[key];
+        }
+      });
+      const { page, limit, name } = filter;
+      const { msg, status, foundCustomers, count } =
+        await UserService.getBellysaveCustomers(
+          {
+            page: page ? parseInt(page.toString()) : 0,
+            limit: limit ? parseInt(limit.toString()) : 10,
+          },
+          filter,
+          name as string
+        );
+      if (!foundCustomers)
+        return res.status(status).json({ msg, status, count: 0 });
+      return res
+        .status(status)
+        .json({ users: foundCustomers, msg, status, count });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async createAgent(
+    req: Request<{}, {}, { name: string }, {}>,
+    res: Response
+  ) {
+    try {
+      const { msg, status, newAgent } = await UserService.createAgent(
+        req.body.name
+      );
+      if (status !== 201) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status, newAgent });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async editAgent(
+    req: Request<{}, {}, {}, { agentId: string; name: string }>,
+    res: Response
+  ) {
+    try {
+      const { agentId, name } = req.query;
+      const { msg, status, foundAgent } = await UserService.editAgent(
+        agentId,
+        name
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status, agent: foundAgent });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async deleteAgent(
+    req: Request<{}, {}, {}, { agentId: string }>,
+    res: Response
+  ) {
+    try {
+      const { msg, status, deletedAgent } = await UserService.deleteAgent(
+        req.query.agentId
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status, deletedAgent });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async getAgents(req: Request<{}, {}, {}, {}>, res: Response) {
+    try {
+      const { msg, status, foundAgents } = await UserService.getAgents();
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status, agents: foundAgents });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async changeCustomerAgent(
+    req: Request<{}, {}, {}, { oldAgent: string; newAgent: string }>,
+    res: Response
+  ) {
+    try {
+      const { oldAgent, newAgent } = req.query;
+      const { msg, status, foundCustomers } =
+        await UserService.changeCustomerAgent(oldAgent, newAgent);
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status, users: foundCustomers });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async getAgentCustomers(
+    req: Request<{}, {}, {}, { agentName: string }>,
+    res: Response
+  ) {
+    try {
+      const { msg, status, foundCustomers } =
+        await UserService.getAgentCustomers(req.query.agentName);
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status, users: foundCustomers });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });
@@ -192,9 +373,7 @@ class UserController {
                 Date.now() - (Date.now() - new Date(user.date!).getTime())
               )
               .split(" ");
-            console.log(parseInt(ago[0]));
-            if (ago[1].includes("month") && parseInt(ago[0]) >= 1) {
-              console.log(ago);
+            if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
               foundUsers.push(user);
             }
           });
@@ -212,7 +391,6 @@ class UserController {
         );
         msg = data.msg;
         status = data.status;
-        console.log(inactive);
 
         if (inactive) {
           data.foundUsers?.forEach((user) => {
@@ -221,9 +399,7 @@ class UserController {
                 Date.now() - (Date.now() - new Date(user.date!).getTime())
               )
               .split(" ");
-            console.log(ago);
-            if (ago[1].includes("month") && parseInt(ago[0]) >= 1) {
-              console.log(ago);
+            if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
               foundUsers.push(user);
             }
           });
@@ -261,7 +437,6 @@ class UserController {
       } else {
         cookieOptions.sameSite = false;
       }
-      console.log(access_token);
       return res
         .status(status)
         .cookie("bellyfood", access_token, cookieOptions)
@@ -285,6 +460,25 @@ class UserController {
     return res
       .cookie("bellyfood", "", cookieOptions)
       .json({ msg: "Logged out", status: 200 });
+  }
+
+  static async createBellysaveCustomer(
+    req: Request<{}, {}, CreateBellysaveCustomer, {}>,
+    res: Response
+  ) {
+    try {
+      const { msg, status, newCustomer } =
+        await UserService.createBellysaveCustomer(req.body);
+      if (status !== 201) {
+        return res.status(status).json({ msg });
+      }
+      if (!newCustomer) return res.status(status).json({ msg, status });
+      const { password, ...others } = newCustomer.toObject();
+      return res.status(status).json({ msg, newCustomer: others, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
   }
 
   static async createCustomer(
@@ -321,6 +515,55 @@ class UserController {
       if (!newAdmin) return res.status(status).json({ msg, status });
       const { password, ...others } = newAdmin.toObject();
       return res.status(status).json({ msg, newAdmin: others, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async payBellysaveCustomer(
+    req: Request<{}, {}, {}, { customerId: string }>,
+    res: Response
+  ) {
+    try {
+      const { msg, status } = await UserService.payBellysaveCustomer(
+        req.query.customerId
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async renewBellysaveCustomer(
+    req: Request<{}, {}, {}, { customerId: string }>,
+    res: Response
+  ) {
+    try {
+      const { msg, status } = await UserService.renewBellysaveCustomer(
+        req.query.customerId
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async approveBellysaveCustomer(
+    req: Request<{}, {}, {}, { customerId: string; agentCode: string }>,
+    res: Response
+  ) {
+    try {
+      const { status, msg } = await UserService.approveBellysaveCustomer(
+        req.query.customerId,
+        req.query.agentCode
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });
@@ -555,6 +798,35 @@ class UserController {
     }
   }
 
+  static async getBellysavePayments(req: Request, res: Response) {
+    try {
+      if (!req.user)
+        return res.status(404).json({ msg: "Not found", status: 404 });
+      const { status, msg, payments } = await UserService.getBellysavePayments(
+        req.user._id
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ payments, msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async getBellysaveCollectionHistory(req: Request, res: Response) {
+    try {
+      if (!req.user)
+        return res.status(404).json({ msg: "Not found", status: 404 });
+      const { status, msg, histories } =
+        await HistoryService.getPaymentCollectionHistory(req.user._id);
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ histories, msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
   static async getPaymentDetails(
     req: Request,
     res: Response,
@@ -574,22 +846,75 @@ class UserController {
     }
   }
 
+  static async editCustomer(
+    req: Request<{}, {}, any, { customerId: string }>,
+    res: Response
+  ) {
+    try {
+      const { msg, status, updatedCustomer } = await UserService.editCustomer(
+        req.query.customerId,
+        req.body
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ updatedCustomer, msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async editBellysaveCustomer(
+    req: Request<{}, {}, any, { customerId: string }>,
+    res: Response
+  ) {
+    try {
+      const { msg, status, updatedCustomer } =
+        await UserService.editBellysaveCustomer(req.query.customerId, req.body);
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ updatedCustomer, msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async editPayment(
+    req: Request<{}, {}, {}, { amountPaid: string; historyId: string }>,
+    res: Response
+  ) {
+    try {
+      const { historyId, amountPaid } = req.query;
+      const { msg, status } = await UserService.editPayment(
+        historyId,
+        parseInt(amountPaid.toString())
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
   static async getDailyHistoryByCode(
-    req: Request<{}, {}, {}, { day: string; agentCode: string }>,
+    req: Request<
+      {},
+      {},
+      {},
+      { day: string; agentCode: string; service: string }
+    >,
     res: Response,
     next: NextFunction
   ) {
     try {
       const date = new Date(req.query.day);
-      console.log(date);
-
-      console.log(date.getTime());
       const { agentCode } = req.query;
 
       const { data, status, msg } =
         await HistoryService.getDailyHistoryByAgentCode(
           date.getTime(),
-          parseInt(agentCode)
+          parseInt(agentCode),
+          req.query.service
         );
       if (status !== 200) return res.status(status).json({ msg, status });
 
@@ -601,15 +926,12 @@ class UserController {
   }
 
   static async getHistoryByDay(
-    req: Request<{}, {}, {}, { day: string }>,
+    req: Request<{}, {}, {}, { day: string; service: string }>,
     res: Response,
     next: NextFunction
   ) {
     try {
       const date = new Date(req.query.day);
-      console.log(date);
-
-      console.log(date.getTime());
 
       const {
         agentWork,
@@ -620,7 +942,10 @@ class UserController {
         histories,
         status,
         msg,
-      } = await HistoryService.generateDailyReport(date.getTime());
+      } = await HistoryService.generateDailyReport(
+        date.getTime(),
+        req.query.service
+      );
       if (status !== 200) return res.status(status).json({ msg, status });
       const data = {
         agentWork,

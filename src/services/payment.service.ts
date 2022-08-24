@@ -1,9 +1,37 @@
+import BellysavePaymentModel from "../models/bellysave-payment.model";
 import PaymentModel from "../models/payment.model";
 import { AddPayment } from "../typings";
 import HistoryService from "./history.service";
 import UserService from "./user.service";
 
 class PaymentService {
+  static async addBellysavePayment({ phone, amount }: AddPayment) {
+    try {
+      const { foundCustomer, status, msg } =
+        await UserService.getBellysaveCustomer("phone", phone);
+      if (!foundCustomer) return { msg, status };
+      const newPayment = await BellysavePaymentModel.create({
+        customerId: foundCustomer._id,
+        location: foundCustomer.location,
+        amount,
+        agentCode: foundCustomer.agentCode || 12345,
+      });
+
+      foundCustomer.amountPaid += amount;
+      foundCustomer.lastPayment = new Date();
+      await foundCustomer.save();
+      const { status: status2, msg: msg2 } =
+        await HistoryService.addBellysavePaymentToHistory(
+          newPayment._id.toString()
+        );
+      if (status2 !== 201) return { msg: msg2, status: status2 };
+      return { msg: "Payment added successfully", status: 201, newPayment };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
   static async addPayment({ phone, amount }: AddPayment) {
     try {
       const { foundUser, status, msg } = await UserService.getUserBy(

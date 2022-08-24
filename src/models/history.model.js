@@ -3,14 +3,14 @@ const { Schema, model } = mongoose;
 
 const historySchema = new Schema(
   {
-    // both
+    // all
     details: {
       type: String,
       required: true,
     },
     type: {
       type: String,
-      enum: ["creation", "payment", "delivery"],
+      enum: ["creation", "payment", "delivery", "completed"],
       required: true,
     },
     agentCode: { type: Number, required: true },
@@ -19,9 +19,11 @@ const historySchema = new Schema(
       required: true,
     },
     date: { type: Date, default: Date.now() },
+    service: { type: String, enum: ["bellyfood", "bellysave"] },
 
     // creation
     customerId: { type: Schema.Types.ObjectId, ref: "User" },
+    bellysave: { type: Schema.Types.ObjectId, ref: "Customer" },
 
     // payment
     paymentId: { type: Schema.Types.ObjectId, ref: "Payment" },

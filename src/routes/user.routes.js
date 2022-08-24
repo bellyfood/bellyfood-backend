@@ -36,4 +36,16 @@ userRouter.route("/change").post(UserController.changePackage);
 
 userRouter.route("/delete").delete(UserController.deleteCustomer);
 
+userRouter
+  .route("/agents")
+  .post(Auth.isAdmin, UserController.createAgent)
+  .get(Auth.isAdmin, UserController.getAgents)
+  .put(Auth.isAdmin, UserController.editAgent)
+  .delete(Auth.isAdmin, UserController.deleteAgent);
+
+userRouter
+  .route("/agents/customers")
+  .get(Auth.isAdmin, UserController.getAgentCustomers)
+  .put(Auth.isSuperAdmin, UserController.changeCustomerAgent);
+
 export default userRouter;

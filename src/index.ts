@@ -13,6 +13,8 @@ import { User } from "./typings";
 import PackageModel from "./models/package.model";
 import paymentRouter from "./routes/payment.routes";
 import superRouter from "./routes/super.routes";
+import bellysaveRouter from "./routes/bellysave.routes";
+import BellysaveCustomerModel from "./models/bellysave-customer.model";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
@@ -23,9 +25,6 @@ app.use(passport.initialize());
 
 const JwtStrategy = passportJwt.Strategy;
 const ExtractJwt = passportJwt.ExtractJwt;
-
-// Super Admin can upgrade, downgrade and delete customers and history
-//
 
 const cookieExtractor = (req: any) => {
   let token = null;
@@ -45,7 +44,16 @@ const opts: StrategyOptions = {
 };
 passport.use(
   new JwtStrategy(opts, async (jwt_payload, done) => {
-    const foundUser: User | null = await UserModel.findOne(jwt_payload);
+    let foundUser: User | null;
+    foundUser = await UserModel.findOne({
+      _id: jwt_payload.sub,
+      phone: jwt_payload.phone,
+    });
+    if (!foundUser)
+      foundUser = await BellysaveCustomerModel.findOne({
+        _id: jwt_payload.sub,
+        phone: jwt_payload.phone,
+      });
     if (!foundUser) return done(null, false);
     return done(null, foundUser);
   })
@@ -95,6 +103,9 @@ app.post("/api/v1/super", async (req: Request, res: Response) => {
         .json({ msg: "Super Admin already exists", status: 405 });
     const { password } = req.body;
     const hash = await argon.hash(password);
+    /**
+     * name, agentCode, gender, phone, password, approved, roles
+     */
     const newSuper = await UserModel.create({ ...req.body, password: hash });
     const { password: psw, ...others } = newSuper.toObject();
     return res.status(201).json({ msg: "Super Admin created successfully" });
@@ -107,39 +118,40 @@ app.use(
   passport.authenticate("jwt", { session: false }),
   superRouter
 );
+app.use(
+  "/api/v1/bellysave",
+  passport.authenticate("jwt", { session: false }),
+  bellysaveRouter
+);
 
-app.get("/api/v1/test", async (req: Request, res: Response) => {
+app.post("/api/v1/packages", async (req: Request, res: Response) => {
   //"NANO", "MICRO", "MEGA", "GIGA", "OGA NA BOSS"
-  // await PackageModel.create(
-  //   {
-  //     name: "NANO",
-  //     price: 10000
-  //   }
-  // );
-  // await PackageModel.create(
-  //   {
-  //     name: "MICRO",
-  //     price: 20000
-  //   }
-  // );
-  // await PackageModel.create(
-  //   {
-  //     name: "MEGA",
-  //     price: 30000
-  //   }
-  // );
-  // await PackageModel.create(
-  //   {
-  //     name: "GIGA",
-  //     price: 40000
-  //   }
-  // );
-  // await PackageModel.create(
-  //   {
-  //     name: "OGA NA BOSS",
-  //     price: 50000
-  //   }
-  // );
+  const packages = await PackageModel.find();
+  if (packages.length > 0) {
+    return res
+      .status(405)
+      .json({ msg: "Packages already inputted", status: 405 });
+  }
+  await PackageModel.create({
+    name: "NANO",
+    price: 10500,
+  });
+  await PackageModel.create({
+    name: "MICRO",
+    price: 18000,
+  });
+  await PackageModel.create({
+    name: "MEGA",
+    price: 29000,
+  });
+  await PackageModel.create({
+    name: "GIGA",
+    price: 65000,
+  });
+  await PackageModel.create({
+    name: "OGA NA BOSS",
+    price: 89000,
+  });
   return res.json(await PackageModel.find());
 });
 app.use("*", (req, res: Response, next) => {
@@ -150,7 +162,6 @@ app.use("*", (req, res: Response, next) => {
 });
 
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {
-  //console.log(error);
   const status = error.status || 500;
   const message = error.message;
 

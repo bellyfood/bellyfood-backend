@@ -8,6 +8,7 @@ const userSchema = new Schema(
       required: true,
     },
     agentCode: { type: Number },
+    agentName: { type: String },
     gender: {
       type: String,
       required: true,
@@ -49,6 +50,6 @@ const userSchema = new Schema(
   }
 );
 
-userSchema.index({ name: "text" });
+userSchema.index({ name: "text", phone: "text" });
 
 export default model("User", userSchema);
