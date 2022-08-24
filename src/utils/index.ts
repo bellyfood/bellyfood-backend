@@ -45,6 +45,7 @@ class Utils {
       console.log(new Date());
       if (new Date() >= new Date("2022-08-05T16:20")) {
         console.log("Removed job time");
+
         await job.remove();
       }
     });
