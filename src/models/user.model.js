@@ -32,6 +32,7 @@ const userSchema = new Schema(
     },
     totalPrice: { type: Number, default: 0 },
     amountPaid: { type: Number, default: 0 },
+    late: { type: Boolean, default: false },
     paid: { type: Boolean, default: false },
     delivered: { type: Boolean, default: false },
     approved: { type: Boolean, default: false },

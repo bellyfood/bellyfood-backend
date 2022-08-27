@@ -43,6 +43,19 @@ class UserController {
         status = data.status;
         msg = data.msg;
         foundUser = data.foundUser;
+        if (!foundUser)
+          return res.status(404).json({ msg: "Not found", status: 404 });
+        const ago = timeAgo
+          .format(
+            Date.now() - (Date.now() - new Date(foundUser.date!).getTime())
+          )
+          .split(" ");
+        if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
+          if (!foundUser.late && foundUser.roles.includes("CUSTOMER")) {
+            foundUser.totalPrice = 1.1 * foundUser.totalPrice;
+            foundUser.late = true;
+          }
+        }
       }
       if (!foundUser) return res.status(status).json({ msg, status });
 
@@ -375,6 +388,10 @@ class UserController {
               .split(" ");
             if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
               foundUsers.push(user);
+              if (!user.late) {
+                user.totalPrice = 1.1 * user.totalPrice;
+                user.late = true;
+              }
             }
           });
         } else {
@@ -393,7 +410,7 @@ class UserController {
         status = data.status;
 
         if (inactive) {
-          data.foundUsers?.forEach((user) => {
+          data.foundUsers?.forEach((user, idx, users) => {
             const ago = timeAgo
               .format(
                 Date.now() - (Date.now() - new Date(user.date!).getTime())
@@ -401,6 +418,10 @@ class UserController {
               .split(" ");
             if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
               foundUsers.push(user);
+              if (!user.late) {
+                user.totalPrice = 1.1 * user.totalPrice;
+                user.late = true;
+              }
             }
           });
         } else {
