@@ -609,6 +609,7 @@ class UserService {
       );
       if (!foundUser) return { msg, status };
       foundUser.delivered = true;
+      foundUser.amountPaid = 0;
       await foundUser.save();
       const { status: status2, msg: msg2 } =
         await HistoryService.addDeliveryToHistory(customerId);

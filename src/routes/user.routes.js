@@ -12,11 +12,8 @@ userRouter.route("/customers").get(Auth.isAdmin, UserController.getCustomers);
 userRouter
   .route("/locations")
   .post(UserController.addLocation)
-  .get(UserController.getLocations)
   .put(UserController.editLocation)
   .delete(UserController.deleteLocation);
-
-userRouter.route("/packages").get(UserController.getPackages);
 
 userRouter.route("/search").get(Auth.isAdmin, UserController.searchByName);
 
@@ -39,7 +36,6 @@ userRouter.route("/delete").delete(UserController.deleteCustomer);
 userRouter
   .route("/agents")
   .post(Auth.isAdmin, UserController.createAgent)
-  .get(Auth.isAdmin, UserController.getAgents)
   .put(Auth.isAdmin, UserController.editAgent)
   .delete(Auth.isAdmin, UserController.deleteAgent);
 

@@ -15,6 +15,7 @@ import paymentRouter from "./routes/payment.routes";
 import superRouter from "./routes/super.routes";
 import bellysaveRouter from "./routes/bellysave.routes";
 import BellysaveCustomerModel from "./models/bellysave-customer.model";
+import UserController from "./controllers/user.controller";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
@@ -84,6 +85,9 @@ const corsOption: CorsOptions = {
 app.use(cors(corsOption));
 if (process.env.NODE_ENV === "production") app.enable("trust proxy");
 app.use("/api/v1/auth", authRouter);
+app.get("/api/v1/users/locations", UserController.getLocations);
+app.get("/api/v1/users/packages", UserController.getPackages);
+app.get("/api/v1/users/agents", UserController.getAgents);
 app.use(
   "/api/v1/users",
   passport.authenticate("jwt", { session: false }),
