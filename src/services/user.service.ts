@@ -520,10 +520,13 @@ class UserService {
       const { status: status2, msg: msg2 } =
         await HistoryService.addBellysaveCustomerToHistory(customerId);
       if (status !== 201) return { msg: msg2, status: status2 };
-      const body = `Welcome to Bellysave, ${foundCustomer.name}. We supply 
-      healthy food to you. View your payments on our website or whatsapp 
-      08053634000`;
-      // await Utils.sendSMS({ to: foundUser.phone, body });
+      const body = Utils.welcomeTemplate(
+        "Bellysave",
+        foundCustomer.name,
+        foundCustomer.phone,
+        foundCustomer.agentName
+      );
+      await Utils.sendSMS({ to: foundCustomer.phone, body });
       return { msg: "Approved customer", status: status };
     } catch (err) {
       console.log(err);
@@ -546,10 +549,13 @@ class UserService {
         customerId
       );
       if (status !== 201) return { msg: msg2, status };
-      const body = `Welcome to Bellyfood, ${foundUser.name}. We supply 
-      healthy food to you. View your payments on our website or whatsapp 
-      08053634000`;
-      // await Utils.sendSMS({ to: foundUser.phone, body });
+      const body = Utils.welcomeTemplate(
+        "Bellyfood",
+        foundUser.name,
+        foundUser.phone,
+        foundUser.agentName
+      );
+      await Utils.sendSMS({ to: foundUser.phone, body });
       return { msg: "Approved customer", status: status };
     } catch (err) {
       console.log(err);

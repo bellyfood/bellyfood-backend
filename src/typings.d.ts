@@ -38,6 +38,7 @@ export class UsersFilter extends Pagination {
   name?: string;
   location?: string;
   inactive?: string;
+  agentName?: string;
 }
 
 export class CustomersFilter extends UsersFilter {}

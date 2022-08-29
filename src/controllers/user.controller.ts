@@ -345,6 +345,7 @@ class UserController {
     try {
       const {
         agentCode,
+        agentName,
         approved,
         paid,
         delivered,
@@ -360,6 +361,7 @@ class UserController {
         delivered,
         agentCode,
         location,
+        agentName,
       };
       Object.keys(filter).forEach((key) => {
         if (!filter[key] && filter[key] !== false && filter[key] !== 0) {
