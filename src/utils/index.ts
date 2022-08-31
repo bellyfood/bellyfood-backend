@@ -38,7 +38,7 @@ class Utils {
         "0" + phone.substring(phone.length - 10)
       }, Password: ${password}`;
     } else {
-      return `Welcome to BELLYSAVE, ${name}. Your money is safe.\n
+      return `Welcome to BELLYSAVE, ${name}. Your money is safer than at a bank.\n
       Please always track your payments on our website bellyfoodafrica.com or whatsapp 08053634000.\n
       Login details: \n
       Phone: ${
