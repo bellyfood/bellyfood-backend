@@ -83,6 +83,7 @@ export type PackageName = "NANO" | "MICRO" | "MEGA" | "GIGA" | "OGA NA BOSS";
 export class AddPayment {
   phone: string;
   amount: number;
+  agentCode: number;
 }
 
 export class AddReport {

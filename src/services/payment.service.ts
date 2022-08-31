@@ -32,7 +32,7 @@ class PaymentService {
     }
   }
 
-  static async addPayment({ phone, amount }: AddPayment) {
+  static async addPayment({ phone, amount, agentCode }: AddPayment) {
     try {
       const { foundUser, status, msg } = await UserService.getUserBy(
         "phone",
@@ -45,7 +45,7 @@ class PaymentService {
         location: foundUser.location,
         packageNames: foundUser.packageNames,
         amount,
-        agentCode: foundUser.agentCode || 12345,
+        agentCode,
       });
       if (foundUser.amountPaid + amount > foundUser.totalPrice)
         return { msg: "Amount will pass the total price", status: 405 };

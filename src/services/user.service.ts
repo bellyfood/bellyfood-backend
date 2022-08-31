@@ -355,12 +355,12 @@ class UserService {
           { skip: page * limit, limit: limit }
         ).select("-password");
       }
-      foundCustomers.forEach(async (customer, index, arr) => {
-        const date = new Date(customer.date);
-        const months = new Date().getMonth() - date.getMonth();
-        arr[index].amountRemoved = months * 1000;
-        await arr[index].save();
-      });
+      // foundCustomers.forEach(async (customer, index, arr) => {
+      //   const date = new Date(customer.date);
+      //   const months = new Date().getMonth() - date.getMonth();
+      //   arr[index].amountRemoved = months * 1000;
+      //   await arr[index].save();
+      // });
       return { msg: "Customers found", status: 200, foundCustomers, count };
     } catch (err) {
       console.log(err);
