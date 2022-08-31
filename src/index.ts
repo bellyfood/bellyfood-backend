@@ -180,7 +180,7 @@ app.use((error: any, req: Request, res: Response, next: NextFunction) => {
 app.listen(PORT, async () => {
   await Config.connect();
   const db = mongoose.connection;
-  db.dropCollection("agendaJobs");
+  if (db.collections["agendaJobs"]) db.dropCollection("agendaJobs");
   const agenda = Utils.createAgenda();
   // const log = Utils.log(agenda);
   const background = Utils.background(agenda);
