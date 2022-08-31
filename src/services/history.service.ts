@@ -256,10 +256,10 @@ class HistoryService {
         numNewPayment,
         numNewDelivery,
         totalAmount,
-      } = await HistoryService.generateReport(
-        histories,
-        foundUsers.map((user) => user.agentCode!)
-      );
+      } = await HistoryService.generateReport(histories, [
+        ...foundUsers.map((user) => user.agentCode!),
+        12345,
+      ]);
       return {
         agentWork,
         numNewCustomer,
