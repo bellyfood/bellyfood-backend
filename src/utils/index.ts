@@ -31,15 +31,19 @@ class Utils {
     password?: string
   ) {
     if (service == "Bellyfood") {
-      return `Welcome to Bellyfood, ${name}. We supply healthy food to you.\n
-      Track your payments on our website bellyfoodafrica.com or whatsapp 08053634000.\n
+      return `Welcome to BELLYFOOD, ${name}. We promise to supply healthy food to you.\n
+      Please always track your payments on our website bellyfoodafrica.com or whatsapp 08053634000.\n
       Login details: \n
-      Phone: ${phone}, Password: ${password}`;
+      Phone: ${
+        "0" + phone.substring(phone.length - 10)
+      }, Password: ${password}`;
     } else {
-      return `Welcome to Bellysave, ${name}. Your money is safe.\n
-      Track your payments on our website bellyfoodafrica.com or whatsapp 08053634000.\n
+      return `Welcome to BELLYSAVE, ${name}. Your money is safe.\n
+      Please always track your payments on our website bellyfoodafrica.com or whatsapp 08053634000.\n
       Login details: \n
-      Phone: ${phone}, Password: ${password}`;
+      Phone: ${
+        "0" + phone.substring(phone.length - 10)
+      }, Password: ${password}`;
     }
   }
 
