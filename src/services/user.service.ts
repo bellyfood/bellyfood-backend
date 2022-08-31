@@ -1,6 +1,7 @@
 import * as argon from "argon2";
 import UserModel from "../models/user.model";
 import {
+  AddReport,
   AdminFilter,
   CreateAdmin,
   CreateBellysaveCustomer,
@@ -18,6 +19,7 @@ import BellysaveCustomerModel from "../models/bellysave-customer.model";
 import BellysavePaymentModel from "../models/bellysave-payment.model";
 import HistoryModel from "../models/history.model";
 import AgentModel from "../models/agent.model";
+import ReportModel from "../models/report.model";
 
 class UserService {
   static async getUserWithRole(customerId: string, role: string) {
@@ -180,6 +182,21 @@ class UserService {
     }
   }
 
+  static async changeAdminPassword(adminId: string, psw: string) {
+    try {
+      const foundAdmin = await UserModel.findOne({
+        _id: adminId,
+      });
+      if (!foundAdmin) return { msg: "Not found", status: 404 };
+      foundAdmin.password = await argon.hash(psw);
+      await foundAdmin.save();
+      return { msg: "Password changed successfully", status: 200 };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
   static async getAdmins(filter: AdminFilter) {
     try {
       const page = filter.page || 0;
@@ -249,6 +266,8 @@ class UserService {
 
   static async changeCustomerAgent(oldAgent: string, newAgent: string) {
     try {
+      const foundAgent = await AgentModel.findOne({ name: newAgent });
+      if (!foundAgent) return { msg: "Not found", status: 404 };
       const foundCustomers = await UserModel.updateMany(
         { agentName: oldAgent },
         { $set: { agentName: newAgent } }
@@ -267,6 +286,46 @@ class UserService {
         agentName,
       });
       return { msg: "Customers found", status: 200, foundCustomers };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
+  static async createReport(newReport: AddReport) {
+    try {
+      const createdReport = await ReportModel.create(newReport);
+      return { msg: "Report created", status: 201, createdReport };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+
+  static async getReports(
+    pagination: Pagination,
+    filter: { [key: string]: any; agentName?: string }
+  ) {
+    try {
+      const page = pagination.page || 0;
+      const limit = pagination.limit || 10;
+      Object.keys(filter).forEach((key) => {
+        if (!filter[key] && filter[key] !== false && filter[key] !== 0) {
+          delete filter[key];
+        }
+      });
+      const count = await ReportModel.find(filter).count();
+      const foundReports = await ReportModel.find(
+        filter,
+        {},
+        { skip: page * limit, limit: limit }
+      ).populate("customerId");
+      return {
+        msg: "Reports found",
+        status: 200,
+        reports: foundReports,
+        count,
+      };
     } catch (err) {
       console.log(err);
       return { msg: "An error occurred", status: 500 };

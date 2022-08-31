@@ -85,4 +85,10 @@ export class AddPayment {
   amount: number;
 }
 
+export class AddReport {
+  customerId: string;
+  agentName: string;
+  details: string;
+}
+
 declare module "otp-generator";

@@ -4,6 +4,7 @@ import AuthService from "../services/auth.service";
 import HistoryService from "../services/history.service";
 import UserService from "../services/user.service";
 import {
+  AddReport,
   AdminFilter,
   AuthDto,
   CreateAdmin,
@@ -45,17 +46,17 @@ class UserController {
         foundUser = data.foundUser;
         if (!foundUser)
           return res.status(404).json({ msg: "Not found", status: 404 });
-        const ago = timeAgo
-          .format(
-            Date.now() - (Date.now() - new Date(foundUser.date!).getTime())
-          )
-          .split(" ");
-        if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
-          if (!foundUser.late && foundUser.roles.includes("CUSTOMER")) {
-            foundUser.totalPrice = 1.1 * foundUser.totalPrice;
-            foundUser.late = true;
-          }
-        }
+        // const ago = timeAgo
+        //   .format(
+        //     Date.now() - (Date.now() - new Date(foundUser.date!).getTime())
+        //   )
+        //   .split(" ");
+        // if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
+        //   if (!foundUser.late && foundUser.roles.includes("CUSTOMER")) {
+        //     foundUser.totalPrice = 1.1 * foundUser.totalPrice;
+        //     foundUser.late = true;
+        //   }
+        // }
       }
       if (!foundUser) return res.status(status).json({ msg, status });
 
@@ -322,6 +323,49 @@ class UserController {
     }
   }
 
+  static async createReport(
+    req: Request<{}, {}, AddReport, {}>,
+    res: Response
+  ) {
+    try {
+      const { msg, status, createdReport } = await UserService.createReport(
+        req.body
+      );
+      if (status !== 201) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status, createdReport });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async getReports(
+    req: Request<
+      {},
+      {},
+      {},
+      { page?: string; limit?: string; agentName?: string }
+    >,
+    res: Response
+  ) {
+    try {
+      const page = parseInt(req.query.page || "0");
+      const limit = parseInt(req.query.limit || "10");
+      const { agentName } = req.query;
+      const { msg, status, reports, count } = await UserService.getReports(
+        { page, limit },
+        { agentName }
+      );
+      if (status !== 200) return res.status(status).json({ msg, status });
+      return res
+        .status(status)
+        .json({ msg, status, reports, count: count || 0 });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
   static async getAgentCustomers(
     req: Request<{}, {}, {}, { agentName: string }>,
     res: Response
@@ -382,20 +426,23 @@ class UserController {
         msg = data.msg;
         status = data.status;
         if (inactive) {
-          data.foundUsers?.forEach((user) => {
-            const ago = timeAgo
-              .format(
-                Date.now() - (Date.now() - new Date(user.date!).getTime())
-              )
-              .split(" ");
-            if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
-              foundUsers.push(user);
-              if (!user.late) {
-                user.totalPrice = 1.1 * user.totalPrice;
-                user.late = true;
-              }
-            }
-          });
+          // data.foundUsers?.forEach((user) => {
+          //   const ago = timeAgo
+          //     .format(
+          //       Date.now() - (Date.now() - new Date(user.date!).getTime())
+          //     )
+          //     .split(" ");
+          //   if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
+          //     foundUsers.push(user);
+          //     if (!user.late) {
+          //       user.totalPrice = 1.1 * user.totalPrice;
+          //       user.late = true;
+          //     }
+          //   }
+          // });
+          foundUsers = data.foundUsers!.filter(
+            (user) => user.inactive === true
+          );
         } else {
           foundUsers = data.foundUsers!;
         }
@@ -412,20 +459,23 @@ class UserController {
         status = data.status;
 
         if (inactive) {
-          data.foundUsers?.forEach((user, idx, users) => {
-            const ago = timeAgo
-              .format(
-                Date.now() - (Date.now() - new Date(user.date!).getTime())
-              )
-              .split(" ");
-            if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
-              foundUsers.push(user);
-              if (!user.late) {
-                user.totalPrice = 1.1 * user.totalPrice;
-                user.late = true;
-              }
-            }
-          });
+          // data.foundUsers?.forEach((user, idx, users) => {
+          //   const ago = timeAgo
+          //     .format(
+          //       Date.now() - (Date.now() - new Date(user.date!).getTime())
+          //     )
+          //     .split(" ");
+          //   if (ago[1].includes("month") && parseInt(ago[0]) >= 3) {
+          //     foundUsers.push(user);
+          //     if (!user.late) {
+          //       user.totalPrice = 1.1 * user.totalPrice;
+          //       user.late = true;
+          //     }
+          //   }
+          // });
+          foundUsers = data.foundUsers!.filter(
+            (user) => user.inactive === true
+          );
         } else {
           foundUsers = data.foundUsers!;
         }
@@ -538,6 +588,24 @@ class UserController {
       if (!newAdmin) return res.status(status).json({ msg, status });
       const { password, ...others } = newAdmin.toObject();
       return res.status(status).json({ msg, newAdmin: others, status });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async changeAdminPassword(
+    req: Request<{}, {}, { password: string }, { adminId: string }>,
+    res: Response
+  ) {
+    try {
+      const { password } = req.body;
+      const { adminId } = req.query;
+      const { msg, status } = await UserService.changeAdminPassword(
+        adminId,
+        password
+      );
+      return res.status(status).json({ msg, status });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });

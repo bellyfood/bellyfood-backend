@@ -44,4 +44,9 @@ userRouter
   .get(Auth.isAdmin, UserController.getAgentCustomers)
   .put(Auth.isSuperAdmin, UserController.changeCustomerAgent);
 
+userRouter
+  .route("/reports")
+  .post(UserController.createReport)
+  .get(Auth.isSuperAdmin, UserController.getReports);
+
 export default userRouter;

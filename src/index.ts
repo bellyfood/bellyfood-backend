@@ -16,6 +16,8 @@ import superRouter from "./routes/super.routes";
 import bellysaveRouter from "./routes/bellysave.routes";
 import BellysaveCustomerModel from "./models/bellysave-customer.model";
 import UserController from "./controllers/user.controller";
+import mongoose from "mongoose";
+import Utils from "./utils";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
@@ -177,5 +179,13 @@ app.use((error: any, req: Request, res: Response, next: NextFunction) => {
 
 app.listen(PORT, async () => {
   await Config.connect();
+  const db = mongoose.connection;
+  db.dropCollection("agendaJobs");
+  const agenda = Utils.createAgenda();
+  // const log = Utils.log(agenda);
+  const background = Utils.background(agenda);
+  await agenda.start();
+  // await log.repeatEvery("5 seconds").save();
+  await background.repeatEvery("24 hours").save();
   console.log(`Server listening on port ${PORT}`);
 });

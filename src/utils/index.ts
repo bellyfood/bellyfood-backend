@@ -3,6 +3,8 @@ import Agenda, { Job } from "agenda";
 import Config from "../config/db.config";
 import otpGenerator from "otp-generator";
 import twilio from "twilio";
+import UserModel from "../models/user.model";
+import BellysaveCustomerModel from "../models/bellysave-customer.model";
 const accountSid = process.env.TWILIO_ACCOUNT_SID!;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE!;
@@ -56,7 +58,41 @@ class Utils {
     agenda.define("log", async (job: Job) => {
       console.log("foundUsers");
     });
-    return agenda;
+    return agenda.create("log", {});
+  }
+
+  static background(agenda: Agenda) {
+    agenda.define("background", async (job: Job) => {
+      const foundUsers = await UserModel.find({
+        roles: ["CUSTOMER"],
+        paid: false,
+      });
+      foundUsers.forEach(async (user, index, arr) => {
+        if (new Date() >= new Date(user.dueDate)) {
+          // await UserModel.updateOne(
+          //   { _id: user._id },
+          //   {
+          //     $set: {
+          //       amountPaid: 0.9 * user.amountPaid,
+          //     },
+          //   }
+          // );
+          user.amountPaid = 0.9 * user.amountPaid;
+          user.dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          user.inactive = true;
+          user.late = true;
+          await user.save();
+        }
+      });
+      const foundCustomers = await BellysaveCustomerModel.find({});
+      foundCustomers.forEach(async (customer, index, arr) => {
+        const date = new Date(customer.date);
+        const months = new Date().getMonth() - date.getMonth();
+        customer.amountRemoved = months * 1000;
+        await customer.save();
+      });
+    });
+    return agenda.create("background", {});
   }
 
   static time(agenda: Agenda) {

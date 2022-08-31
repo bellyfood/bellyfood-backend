@@ -17,6 +17,10 @@ superRouter
   .delete(Auth.isSuperAdmin, UserController.deleteAdmin);
 
 superRouter
+  .route("/admins/password")
+  .put(Auth.isSuperAdmin, UserController.changeAdminPassword);
+
+superRouter
   .route("/admin/disable")
   .post(Auth.isSuperAdmin, UserController.disableAdmin);
 
