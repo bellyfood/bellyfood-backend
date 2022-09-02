@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import * as argon from "argon2";
 import { AuthDto } from "../typings";
 import BellysaveCustomerModel from "../models/bellysave-customer.model";
+import AgentModel from "../models/agent.model";
 
 interface LoginFilter {
   phone: string;
@@ -23,6 +24,9 @@ class AuthService {
       if (!foundUser) {
         foundUser = await UserModel.findOne(filter);
       }
+      if (!foundUser) {
+        foundUser = await AgentModel.findOne({ phone });
+      }
       if (!foundUser) return { msg: "Not found", status: 404 };
       const pswCorrect = await argon.verify(foundUser.password!, password);
       if (!pswCorrect) return { msg: "Credentials incorrect", status: 401 };
@@ -34,6 +38,23 @@ class AuthService {
       );
       foundUser.lastLogin = new Date();
       await foundUser.save();
+      return { msg: "Logged in", access_token, status: 200 };
+    } catch (err) {
+      console.log(err);
+      return { msg: "Error occurred", status: 500 };
+    }
+  }
+
+  static async agentLogin({ phone, password, service }: AuthDto) {
+    try {
+      const foundAgent = await AgentModel.findOne({ phone });
+      if (!foundAgent) return { msg: "Not found", status: 404 };
+      const pswCorrect = await argon.verify(foundAgent.password!, password);
+      if (!pswCorrect) return { msg: "Credentials incorrect", status: 401 };
+      const { access_token } = await AuthService.signToken(
+        foundAgent._id.toString(),
+        foundAgent.phone!
+      );
       return { msg: "Logged in", access_token, status: 200 };
     } catch (err) {
       console.log(err);

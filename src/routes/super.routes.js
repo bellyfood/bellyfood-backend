@@ -21,6 +21,10 @@ superRouter
   .put(Auth.isSuperAdmin, UserController.changeAdminPassword);
 
 superRouter
+  .route("/agents/password")
+  .put(Auth.isSuperAdmin, UserController.changeAgentPassword);
+
+superRouter
   .route("/admin/disable")
   .post(Auth.isSuperAdmin, UserController.disableAdmin);
 

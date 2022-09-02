@@ -18,6 +18,7 @@ import BellysaveCustomerModel from "./models/bellysave-customer.model";
 import UserController from "./controllers/user.controller";
 import mongoose from "mongoose";
 import Utils from "./utils";
+import AgentModel from "./models/agent.model";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
@@ -54,6 +55,11 @@ passport.use(
     });
     if (!foundUser)
       foundUser = await BellysaveCustomerModel.findOne({
+        _id: jwt_payload.sub,
+        phone: jwt_payload.phone,
+      });
+    if (!foundUser)
+      foundUser = await AgentModel.findOne({
         _id: jwt_payload.sub,
         phone: jwt_payload.phone,
       });

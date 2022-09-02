@@ -86,6 +86,12 @@ export class AddPayment {
   agentCode: number;
 }
 
+export class AddAgent {
+  name: string;
+  password: string;
+  phone: string;
+}
+
 export class AddReport {
   customerId: string;
   agentName: string;

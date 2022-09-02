@@ -4,6 +4,7 @@ import AuthService from "../services/auth.service";
 import HistoryService from "../services/history.service";
 import UserService from "../services/user.service";
 import {
+  AddAgent,
   AddReport,
   AdminFilter,
   AuthDto,
@@ -21,6 +22,7 @@ import LocationModel from "../models/location.model";
 import { database } from "agenda/dist/agenda/database";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
+import AgentModel from "../models/agent.model";
 
 TimeAgo.addLocale(en);
 const timeAgo = new TimeAgo("en-US");
@@ -58,6 +60,8 @@ class UserController {
         //   }
         // }
       }
+      if (!foundUser)
+        foundUser = await AgentModel.findOne({ _id: req.user._id });
       if (!foundUser) return res.status(status).json({ msg, status });
 
       const { password, ...others } = foundUser.toObject();
@@ -246,16 +250,29 @@ class UserController {
     }
   }
 
-  static async createAgent(
-    req: Request<{}, {}, { name: string }, {}>,
+  static async createAgent(req: Request<{}, {}, AddAgent, {}>, res: Response) {
+    try {
+      const { name, password, phone } = req.body;
+      const { msg, status, newAgent } = await UserService.createAgent(req.body);
+      if (status !== 201) return res.status(status).json({ msg, status });
+      return res.status(status).json({ msg, status, newAgent });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "An error occurred", status: 500 });
+    }
+  }
+
+  static async changeAgentPassword(
+    req: Request<{}, {}, { agentId: string; password: string }, {}>,
     res: Response
   ) {
     try {
-      const { msg, status, newAgent } = await UserService.createAgent(
-        req.body.name
+      const { agentId, password } = req.body;
+      const { msg, status } = await UserService.changeAgentPassword(
+        password,
+        agentId
       );
-      if (status !== 201) return res.status(status).json({ msg, status });
-      return res.status(status).json({ msg, status, newAgent });
+      return res.status(status).json({ msg, status });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ msg: "An error occurred", status: 500 });
@@ -492,12 +509,14 @@ class UserController {
   }
 
   static async login(
-    req: Request<{}, {}, AuthDto, {}>,
+    req: Request<{}, {}, AuthDto, { isAgent?: boolean }>,
     res: Response,
     next: NextFunction
   ) {
     try {
-      const { msg, status, access_token } = await AuthService.login(req.body);
+      const { msg, status, access_token } = !req.query.isAgent
+        ? await AuthService.login(req.body)
+        : await AuthService.agentLogin(req.body);
       if (status !== 200) {
         return res.status(status).json({ msg, status });
       }

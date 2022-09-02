@@ -29,6 +29,7 @@ const customerSchema = new Schema(
     location: {
       type: String,
     },
+    isBellysave: { type: Boolean, default: true },
     date: { type: Date, default: Date.now() },
     lastLogin: { type: Date },
     lastPayment: { type: Date },

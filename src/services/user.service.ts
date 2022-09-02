@@ -1,6 +1,7 @@
 import * as argon from "argon2";
 import UserModel from "../models/user.model";
 import {
+  AddAgent,
   AddReport,
   AdminFilter,
   CreateAdmin,
@@ -224,10 +225,26 @@ class UserService {
     }
   }
 
-  static async createAgent(name: string) {
+  static async createAgent({ name, password, phone }: AddAgent) {
     try {
-      const newAgent = await AgentModel.create({ name });
+      const newAgent = await AgentModel.create({
+        name,
+        phone,
+        password: await argon.hash(password),
+      });
       return { msg: "Agent created", status: 201, newAgent };
+    } catch (err) {
+      console.log(err);
+      return { msg: "An error occurred", status: 500 };
+    }
+  }
+  static async changeAgentPassword(newP: string, agentId: string) {
+    try {
+      const foundAgent = await AgentModel.findOne({ _id: agentId });
+      if (!foundAgent) return { msg: "Agent not found", status: 404 };
+      foundAgent.password = await argon.hash(newP);
+      await foundAgent.save();
+      return { msg: "Agent password changed", status: 200 };
     } catch (err) {
       console.log(err);
       return { msg: "An error occurred", status: 500 };
@@ -762,12 +779,12 @@ class UserService {
         roles: "CUSTOMER",
       });
       if (!foundUser) return { msg: "Not found", status: 404 };
-      if (foundUser.amountPaid < foundUser.totalPrice) {
-        return {
-          msg: "Customer hasn't finished paying current package",
-          status: 405,
-        };
-      }
+      // if (foundUser.amountPaid < foundUser.totalPrice) {
+      //   return {
+      //     msg: "Customer hasn't finished paying current package",
+      //     status: 405,
+      //   };
+      // }
       const deletedUser = await UserModel.findOneAndDelete({
         _id: customerId,
         roles: "CUSTOMER",
