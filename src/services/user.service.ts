@@ -602,7 +602,7 @@ class UserService {
         foundCustomer.phone,
         foundCustomer.agentName
       );
-      await Utils.sendSMS({ to: foundCustomer.phone, body });
+      // await Utils.sendSMS({ to: foundCustomer.phone, body });
       return { msg: "Approved customer", status: status };
     } catch (err) {
       console.log(err);
@@ -631,7 +631,7 @@ class UserService {
         foundUser.phone,
         foundUser.agentName
       );
-      await Utils.sendSMS({ to: foundUser.phone, body });
+      // await Utils.sendSMS({ to: foundUser.phone, body });
       return { msg: "Approved customer", status: status };
     } catch (err) {
       console.log(err);
