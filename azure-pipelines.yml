@@ -1,0 +1,27 @@
+name: Docker-CI
+trigger:
+  branches:
+    include:
+      - main
+
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  ImageName: 'nero20052023/bellyfood-backend:latest'
+
+stages:
+- stage: Build
+  displayName: Build image
+  jobs:  
+  - job: DockerImage
+    displayName: Build and push Docker image
+    steps:
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'Docker Hub'
+        repository: '$(ImageName)'
+        command: 'buildAndPush'
+        Dockerfile: '**/Dockerfile'
+        tags: 'latest'
